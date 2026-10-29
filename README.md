@@ -18,11 +18,11 @@
 | 🔤 **Zpix 像素字** | 中英數字全 12px 點陣（繁中可用），jsDelivr 線上載入，離線退回微軟正黑體 |
 | 🌌 **夜空** | 上方星星與緩慢飄動的方塊雲（顏色隨世界變化） |
 | 🟩 **經驗值條** | Hermes 回覆時輸入框下方跑 XP 條 |
-| ⛏ **挖礦中…** | 「思考中」換成迷你旋轉草方塊（32×32 高細節材質） |
+| ⛏ **思考中** | 8 種會動的方塊 / 生物圖示，每一輪對話輪流換一個 |
 | 💜 **附魔光澤** | 你的訊息泡泡有紫色附魔光掃過 |
 | 🌱 **地表狀態列** | 每個世界自己的地表條（草地 / 緋紅菌岩 / 終界石 / 雪地 / 落花草地） |
 | 🪨 **石頭按鈕** | 石材紋理 + 立體斜角，滑過變藍底黃字 |
-| 🐸 **苦力怕寵物** | 4 種造型可挑，9 種動畫狀態 |
+| 🐾 **寵物** | 4 種苦力怕 + 豬、雞、史萊姆、蜜蜂、終界使者，全部 9 種動畫狀態 |
 
 ## 🏝 世界
 
@@ -37,6 +37,27 @@
 | `minecraft-cherry` | 櫻花林 | 櫻花樹、落花、池塘 | 櫻粉 · *Petals everywhere!* |
 
 切換：`hermes config set display.skin minecraft-nether`（或在 Appearance 直接選），一秒內即時換。
+
+## ⛏ 思考中
+
+![thinking](docs/thinking.gif)
+
+草方塊（轉動）、鑽石礦（閃光）、熔爐（火焰）、TNT（引信閃爍）、挖掘中（裂開→碎掉）、史萊姆（彈跳）、蜜蜂（振翅）、雞（啄地）。
+依對話輪次輪流出現：第 1 輪草方塊、第 2 輪鑽石礦…第 9 輪再從頭。
+
+## 🐾 生物寵物
+
+![mobs](docs/mobs.gif)
+
+| 寵物 | 生物 |
+|---|---|
+| `mc-pig` | 豬 |
+| `mc-chicken` | 雞 |
+| `mc-slime` | 史萊姆（走路時會壓扁彈跳） |
+| `mc-bee` | 蜜蜂（一直在飛） |
+| `mc-enderman` | 終界使者（身邊有紫色粒子） |
+
+切換：`hermes pets select mc-bee`
 
 ## 🐸 苦力怕
 
@@ -75,6 +96,8 @@ tools/voxel.py          5 種空島 + 光線投射渲染器
 tools/pixels.py         材質（32×32 草地 / 泥土）
 tools/build_skin.py     → skins/*.yaml（5 個世界）+ docs/islands.gif、grass-block.gif
 tools/make_creeper.py   → pets/creeper-*/ + docs/creepers.gif
+tools/make_mobs.py      → pets/mc-*/ + docs/mobs.gif
+tools/make_icons.py     → 思考中圖示 atlas（build_skin 會內嵌）
 tools/make_lantern.py   → pets/lantern-buddy/
 tools/make_preview.py   → docs/preview.html；tools/record_gif.py → docs/preview.gif
 ```
@@ -82,11 +105,13 @@ tools/make_preview.py   → docs/preview.html；tools/record_gif.py → docs/pre
 ```bash
 pip install pillow
 python tools/make_creeper.py
-python tools/build_skin.py --install                     # 主世界 + creeper-blocky
+python tools/make_mobs.py
+python tools/build_skin.py --install                     # 保留目前的世界與寵物
+python tools/build_skin.py --install --pet=mc-bee
 python tools/build_skin.py --install --skin=minecraft-end
 ```
 
-每個世界的 customCSS 約 27 KiB（上限 32 KiB，超過會直接報錯）。極簡「Voxel Lantern」版保留在 git tag `voxel-lantern`。
+每個世界的 customCSS 約 30 KiB（上限 32 KiB，超過會直接報錯）。極簡「Voxel Lantern」版保留在 git tag `voxel-lantern`。
 
 ## 📄 License
 

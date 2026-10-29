@@ -1,0 +1,6 @@
+{
+  "id": "mc-slime",
+  "displayName": "Slime Buddy",
+  "description": "A pixel slime that hops, reads and reacts alongside Hermes.",
+  "spritesheetPath": "spritesheet.png"
+}

@@ -1,0 +1,6 @@
+{
+  "id": "mc-bee",
+  "displayName": "Bee Buddy",
+  "description": "A pixel bee that hops, reads and reacts alongside Hermes.",
+  "spritesheetPath": "spritesheet.png"
+}

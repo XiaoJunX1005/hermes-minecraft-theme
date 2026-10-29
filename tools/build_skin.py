@@ -287,10 +287,15 @@ def sheet_uri(frames: list[Image.Image], colors: int) -> str:
 def build() -> Path:
     OUT.mkdir(exist_ok=True)
     DOCS.mkdir(exist_ok=True)
+    from make_icons import ICONS, atlas, F as THINK_F, S as THINK_S
+    think = atlas()
+    think_rows = "".join(
+        f'[data-slot="aui_message-group"]:nth-child({len(ICONS)}n+{k + 1}) [data-slot="aui_response-loading"]::before'
+        f'{{background-position-y:-{k * THINK_S * 2}px}}' for k in range(1, len(ICONS)))
     common = {
         "png:noise": png_data_uri(tex_noise()),
         "png:stone": png_data_uri(tex_stone()),
-        "png:spin": sheet_uri(spin_frames(24, SPIN_FRAMES), 48),   # tiny "thinking" block (shown at 20px)
+        "png:think": png_data_uri(think.quantize(colors=96, method=Image.Quantize.FASTOCTREE)),
     }
     src_css = (SRC / "desktop.css").read_text(encoding="utf-8")
     base_yaml = (SRC / "skin.base.yaml").read_text(encoding="utf-8").rstrip()
@@ -308,8 +313,8 @@ def build() -> Path:
             "svg:clouds": svg_data_uri(clouds_svg().replace('fill="white"', f'fill="{w["cloud"]}"')),
         })
         css = src_css
-        for k, v in {"font_import": FONT_IMPORT, "font_stack": FONT_STACK, "spin_frames": str(SPIN_FRAMES),
-                     "spin_duration_fast": "0.7s", "island_frames": str(ISLAND_FRAMES),
+        for k, v in {"font_import": FONT_IMPORT, "font_stack": FONT_STACK, "think_rows": think_rows,
+                     "think_h": str(len(ICONS) * THINK_S * 2), "island_frames": str(ISLAND_FRAMES),
                      "island_duration": f"{ISLAND_FRAMES * 0.2:.1f}s", "splash": w["splash"],
                      "hero_glow": w["glow"], "sky_tint": w["tint"], "accent": w["accent"]}.items():
             css = css.replace("{{" + k + "}}", v)
@@ -361,6 +366,17 @@ def build() -> Path:
     pal = strip.quantize(colors=200, method=Image.Quantize.MEDIANCUT)
     q = [im.quantize(palette=pal, dither=Image.Dither.NONE) for im in gif]
     q[0].save(DOCS / "islands.gif", save_all=True, append_images=q[1:], duration=200, loop=0)
+    z = 4  # thinking icons preview, 4x
+    tg = []
+    for f in range(THINK_F):
+        c = Image.new("RGBA", (len(ICONS) * (THINK_S + 4) * z, (THINK_S + 4) * z), (24, 26, 32, 255))
+        for k in range(len(ICONS)):
+            cell = think.crop((f * THINK_S, k * THINK_S, (f + 1) * THINK_S, (k + 1) * THINK_S))
+            c.alpha_composite(cell.resize((THINK_S * z, THINK_S * z), Image.NEAREST), (k * (THINK_S + 4) * z + 2 * z, 2 * z))
+        tg.append(c.convert("RGB"))
+    tp = tg[0].quantize(colors=160, method=Image.Quantize.MEDIANCUT)
+    tq = [im.quantize(palette=tp, dither=Image.Dither.NONE) for im in tg]
+    tq[0].save(DOCS / "thinking.gif", save_all=True, append_images=tq[1:], duration=150, loop=0)
     return OUT / "minecraft.yaml"
 
 
@@ -374,7 +390,13 @@ def hermes_home() -> Path:
     return Path.home() / ".hermes"
 
 
-def install(skin: Path, skin_name: str = "minecraft", pet: str = "creeper-blocky") -> None:
+def _cfg(key: str) -> str:
+    r = subprocess.run(["hermes", "config", "get", key], capture_output=True, text=True)
+    lines = [l.strip() for l in r.stdout.splitlines() if l.strip()]
+    return lines[-1] if lines else ""
+
+
+def install(skin: Path, skin_name: str | None = None, pet: str | None = None) -> None:
     """Copy every world skin + all pets; drop the retired font-variant skins."""
     home = hermes_home()
     (home / "skins").mkdir(parents=True, exist_ok=True)
@@ -385,13 +407,19 @@ def install(skin: Path, skin_name: str = "minecraft", pet: str = "creeper-blocky
     for d in sorted((ROOT / "pets").iterdir()):
         if d.is_dir():
             shutil.copytree(d, home / "pets" / d.name, dirs_exist_ok=True)
-    subprocess.run(["hermes", "config", "set", "display.skin", skin_name], check=False)
-    subprocess.run(["hermes", "pets", "select", pet], check=False)
+    cur_skin, cur_pet = _cfg("display.skin"), _cfg("display.pet.slug")
+    skin_name = skin_name or (cur_skin if cur_skin in WORLDS else "minecraft")
+    pet = pet or (cur_pet if (home / "pets" / cur_pet).is_dir() and cur_pet else "creeper-blocky")
+    if skin_name != cur_skin:
+        subprocess.run(["hermes", "config", "set", "display.skin", skin_name], check=False)
+    if pet != cur_pet:
+        subprocess.run(["hermes", "pets", "select", pet], check=False)
+    print(f"skin={skin_name} pet={pet}")
     print(f"installed into {home}")
 
 
 if __name__ == "__main__":
     path = build()
     if "--install" in sys.argv:
-        pick = next((a.split("=", 1)[1] for a in sys.argv if a.startswith("--skin=")), "minecraft")
-        install(path, pick)
+        arg = lambda k: next((a.split("=", 1)[1] for a in sys.argv if a.startswith(f"--{k}=")), None)  # noqa: E731
+        install(path, arg("skin"), arg("pet"))

@@ -12,7 +12,7 @@ mkdir -p "$HOME_DIR/skins"
 for s in minecraft minecraft-nether minecraft-end minecraft-snow minecraft-cherry; do
   curl -fsSL "$REPO/skins/$s.yaml" > "$HOME_DIR/skins/$s.yaml"
 done
-for p in creeper-blocky creeper-carved creeper-tall creeper-buddy lantern-buddy; do
+for p in creeper-blocky creeper-carved creeper-tall creeper-buddy lantern-buddy mc-pig mc-chicken mc-slime mc-bee mc-enderman; do
   mkdir -p "$HOME_DIR/pets/$p"
   curl -fsSL "$REPO/pets/$p/pet.json" > "$HOME_DIR/pets/$p/pet.json"
   curl -fsSL "$REPO/pets/$p/spritesheet.png" > "$HOME_DIR/pets/$p/spritesheet.png"

@@ -201,24 +201,26 @@ body:has([data-slot="aui_response-loading"]) [data-slot="composer-surface"]::aft
   to   { scale: 1.09; }
 }
 
-/* ---------- "thinking…": a tiny block mining loop --------------------------- */
+/* ---------- "thinking…": a different block or mob each turn ---------------- */
 [data-slot="aui_response-loading"]::before {
   content: "";
   display: inline-block;
   flex: none;
-  width: 20px;
-  height: 20px;
+  width: 32px;
+  height: 32px;
   margin-right: 8px;
   vertical-align: middle;
-  background-image: url("{{png:spin}}");
-  background-size: calc(20px * {{spin_frames}}) 20px;
+  background-image: url("{{png:think}}");
+  background-size: 256px {{think_h}}px;
+  background-position: 0 0;
   image-rendering: pixelated;
-  animation: mc-spin-sm {{spin_duration_fast}} steps({{spin_frames}}) infinite;
+  animation: mc-think 1.2s steps(8) infinite;
 }
-@keyframes mc-spin-sm {
-  from { background-position: 0 0; }
-  to   { background-position: calc(-20px * {{spin_frames}}) 0; }
+@keyframes mc-think {
+  from { background-position-x: 0; }
+  to   { background-position-x: -256px; }
 }
+{{think_rows}}
 
 /* ---------- messages ------------------------------------------------------- */
 /* user bubble: an enchanted item — purple glint sweeps across */
