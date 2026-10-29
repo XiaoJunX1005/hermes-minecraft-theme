@@ -20,8 +20,8 @@ const ATLAS = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAADwCAMAAAD/wpw
 const KINDS = [{"kind": "think", "label": "思考中"}, {"kind": "write", "label": "撰寫回覆"}, {"kind": "shell", "label": "執行指令"}, {"kind": "web", "label": "搜尋網路"}, {"kind": "browse", "label": "瀏覽網頁"}, {"kind": "read", "label": "讀取檔案"}, {"kind": "search", "label": "搜尋檔案"}, {"kind": "edit", "label": "修改檔案"}, {"kind": "vision", "label": "查看畫面"}, {"kind": "memory", "label": "整理記憶"}, {"kind": "agent", "label": "派出幫手"}, {"kind": "wait", "label": "等你回應"}, {"kind": "error", "label": "出錯了"}, {"kind": "done", "label": "完成"}, {"kind": "tool", "label": "使用工具"}]
 const LABEL = Object.fromEntries(KINDS.map(k => [k.kind, k.label]))
 const STALE_MS = 10 * 60 * 1000
-const BENCH = 'data:image/png;base64,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'
-const BENCH_ROWS = ["lectern-idle", "lectern-think", "lectern-read", "lectern-write", "forge-idle", "forge-edit", "forge-shell", "forge-tool", "map-idle", "map-web", "map-browse", "map-search", "map-vision", "store-idle", "store-memory", "store-wait", "store-agent", "fx-done", "fx-error"]
+const CRITTERS = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAABwCAMAAADhcojgAAABgFBMVEUAAAASEhbv8fP2yDIolm7/qihGWoz/1lB4xPBALiQyQGzh4eE2JBZgRjRaquZGyJbI7P/Nzc1ugrSq4P//8JZaWmBGRkxGltfI8Kq+bvDmPDKWRhQ8HgoUKFCC/4wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACSVEUVAAAAgHRSTlMA//v/////////////////0v//////////////////AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH9bCB0AAANGSURBVHja7ZqLdqMgEIb5c2maTdJ0L2lru933f8xF8AIDCiOgyTlOm5iPmWF+RVFjhIgwAKKoBQpgs9mMhqQKHCmAzi//W84ukBaAtvrTGZZfc0aBIAJUgRo3OkfXb/0NJwt08u0C2G6357N8yaVyE04W6OQPFmw6GeRpAt346IJc9guk8bQBNzuBcn7Bt2jFXkFcgU48Y5PlFjggoN2J0R66hDML9hSMmLhTBLLrTTmzjAlc7UHMHLLiQ+gpgN/K9E77Ks3gLAKtfE8BPCvrBRicQ6CZ7y8g4fv52xLQcg6BZr5TQGkNFUgVaMaTAIWvIx2kCqT5fgF4kWbOZB2nCnTyaYFmn1H80q9Sx6kC3XxSwGQIDycK9OcPFBQBniLQn+8UEHh/t+YVwgkC/fVCBbkcEujkexroLcZ4fCq7BcOzeZJAUfzqBIkruNrc1z/2KFEunA8cj/UcKt/h4+Y+H+S+H9nyj9IuwKVewmUVU7M5rxicI1+SNOiPhJVSzb1yg1PzZQdyQ+HyeflEvfEwN4vSaxjMb8akSRAu6zGVZo1xzznyRztQe7VO6PdykzPk66sIeuPg3roMcXr+auu5yN4r6Fcsm84Qw6H+XGYWyM0PIeB2069YZgvI2iFXcFyBtzces4eAWyAjZ1+jaQLGOvzZWRyzhyDQocCp+4thrmB2gez8EAKgqL/GOTVtfTwSBER0qGPM89fJuLeAHcEVHOywfcDqeehKHsGKSYKDHfLP7zzB9/Z4YBH+owxLscBBGZZi2fD3IP+xFN/DFjh8ffUNaBkz+Yki7Pea93vM4VfP1GWjXuoAfZjogOJ+tXDfhz15/cLQOdJBOf+9CFhwCExt1mdfWwl/d2iAfva1lfITgPMVf2n/XVo12clPqMJPWGK4mp4P7Hb2FUsKV7HxnWKJtcHPVc9VTPwkvgLXrmVulg3XuuHaB2TjyvVXnvjd9QP4aCXNzVZDxe+gShYQsYk4m5jPy++EJQ4r1mEcMVFMm2iiefmpOPlsMiG6EuLhHiksWBA/akNBQYGCIU4WxC2YLIj6cwsICXL9hQUEWIrTDeh+DTYnA0+9/cP8/GQZ5mYhm351hvlZ/ebBfJI5N6+22uL2H9JejcD6axXvAAAAAElFTkSuQmCC'
+const CRITTER_ROWS = ["bee", "allay", "bat", "ghast", "blaze", "eye", "phantom"]
 
 // Hermes tool name -> activity kind. Unknown tools fall back to 'tool'.
 const TOOL_KIND = [
@@ -189,164 +189,173 @@ export function onEvent(ev) {
 }
 
 
-// ---- workbench: four stations above the composer, a mini copy of your pet walks to the active one
-const STATIONS = ['lectern', 'forge', 'map', 'store']
-const STATION_OF = {
-  think: 'lectern', read: 'lectern', write: 'lectern',
-  edit: 'forge', shell: 'forge', tool: 'forge',
-  web: 'map', browse: 'map', search: 'map', vision: 'map',
-  memory: 'store', wait: 'store', agent: 'store'
+// ---- critters: a few small world-themed mobs roaming the whole window --------------------
+const ROSTER = {
+  overworld: ['bee', 'bee', 'allay'],
+  cherry: ['bee', 'bee', 'allay'],
+  nether: ['ghast', 'blaze', 'blaze'],
+  end: ['phantom', 'eye', 'eye'],
+  snow: ['bat', 'allay', 'bat']
 }
-const PET_POSE = {
-  think: 'review', read: 'review', write: 'review', edit: 'running', shell: 'running', tool: 'running',
-  web: 'review', browse: 'review', search: 'review', vision: 'review', memory: 'review',
-  wait: 'waiting', agent: 'waving', done: 'waving', error: 'failed', idle: 'idle'
-}
-// CSS-pixel layout: stations on a shelf, the pet walks on the floor below them
-const TILE = 32, GAP = 12, PAD = 4, SHELF = 34, BH = 66, PET_H = 30, SPEED = 70
-const BW = PAD * 2 + TILE * 4 + GAP * 3
-const stationX = i => PAD + i * (TILE + GAP)
+const SPEC = { bee: [30, 70], allay: [30, 55], bat: [30, 95], ghast: [44, 32], blaze: [32, 48], eye: [26, 42], phantom: [36, 85] }
+const FLEE = 110
 
-export class Workbench {
-  constructor(request) {
-    this.request = request
+function mulberry(seed) {
+  let s = seed >>> 0
+  return () => {
+    s = (s + 0x6d2b79f5) >>> 0
+    let t = s
+    t = Math.imul(t ^ (t >>> 15), t | 1)
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+export class Critters {
+  constructor(seed = Date.now()) {
+    this.rand = mulberry(seed)
     this.canvas = document.createElement('canvas')
-    this.canvas.id = 'hmt-bench'
+    this.canvas.id = 'hmt-critters'
     Object.assign(this.canvas.style, {
-      position: 'fixed', width: `${BW}px`, height: `${BH}px`, pointerEvents: 'none', zIndex: '5', display: 'none'
+      position: 'fixed', left: '0px', top: '0px', pointerEvents: 'none', zIndex: '40', opacity: '0.9', display: 'none'
     })
     document.body.appendChild(this.canvas)
     this.ctx = this.canvas.getContext('2d')
     this.atlas = new Image()
-    this.atlas.src = BENCH
-    this.pet = null          // { img, fw, fh, rows, frames, loop }
-    this.petRev = ''
-    this.petX = stationX(0) + TILE / 2
-    this.lastStation = 0
+    this.atlas.src = CRITTERS
+    this.world = ''
+    this.list = []
+    this.pointer = { x: -1e4, y: -1e4 }
+    this.w = 0
+    this.h = 0
     this.last = 0
     this.raf = 0
-    this.frames = 0
+    this.hop = 0
+    this.cheered = false
     this.visible = false
     this.reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)')
-  }
-
-  async loadPet() {
-    try {
-      const info = await this.request('pet.info', this.petRev ? { knownRevision: this.petRev } : {})
-      if (!info || !info.enabled) {
-        this.pet = null
-        this.petRev = ''
-        return
-      }
-      if (info.spritesheetUnchanged && this.pet) return
-      if (!info.spritesheetBase64) return
-      const img = new Image()
-      img.src = `data:${info.mime || 'image/png'};base64,${info.spritesheetBase64}`
-      const rows = info.stateRows || ['idle', 'running-right', 'running-left', 'waving', 'jumping', 'failed', 'waiting', 'running', 'review']
-      this.pet = {
-        img, rows, fw: info.frameW || 192, fh: info.frameH || 208, loop: info.loopMs || 1100,
-        frames: name => (info.framesByRow && info.framesByRow[name]) || (info.framesByState && info.framesByState[name]) || info.framesPerState || 6
-      }
-      this.petRev = info.spritesheetRevision || ''
-    } catch {
-      /* pet RPC unavailable: draw the stations only */
+    this.onMove = e => {
+      this.pointer.x = e.clientX
+      this.pointer.y = e.clientY
     }
+    window.addEventListener('pointermove', this.onMove, { passive: true })
   }
 
-  /** Place the canvas on the composer's top-right edge; hide when there is no room or no minecraft theme. */
+  /** Size to the window; show only under a minecraft skin; respawn when the world changes. */
   place() {
-    const themed = document.documentElement.dataset.mcTheme === '1'
-    let best = null
-    if (themed) {
-      for (const el of document.querySelectorAll('[data-slot="composer-surface"]')) {
-        const r = el.getBoundingClientRect()
-        if (r.width >= 420 && r.height > 0 && (!best || r.width > best.width)) best = r
-      }
-    }
-    this.visible = Boolean(best)
+    const root = document.documentElement
+    const world = getComputedStyle(root).getPropertyValue('--mc-world').trim().replace(/"/g, '') || 'overworld'
+    const w = window.innerWidth
+    const h = window.innerHeight
+    this.visible = root.dataset.mcTheme === '1' && w > 300 && h > 240
     this.canvas.style.display = this.visible ? 'block' : 'none'
-    if (best) {
-      this.canvas.style.left = `${Math.round(best.right - BW - 14)}px`
-      this.canvas.style.top = `${Math.round(best.top - BH + 4)}px`
+    if (!this.visible) return false
+    if (w !== this.w || h !== this.h) {
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
-      if (this.canvas.width !== BW * dpr) {
-        this.canvas.width = BW * dpr
-        this.canvas.height = BH * dpr
+      this.w = w
+      this.h = h
+      this.canvas.width = Math.round(w * dpr)
+      this.canvas.height = Math.round(h * dpr)
+      this.canvas.style.width = `${w}px`
+      this.canvas.style.height = `${h}px`
+      for (const c of this.list) this.retarget(c)
+    }
+    if (world !== this.world) {
+      this.world = world
+      this.spawn()
+    }
+    return true
+  }
+
+  spawn() {
+    this.list = (ROSTER[this.world] || ROSTER.overworld).map(name => {
+      const [size, speed] = SPEC[name]
+      const c = { name, size, speed, x: this.rand() * this.w, y: 30 + this.rand() * (this.h - 60), vx: 0, vy: 0,
+        tx: 0, ty: 0, wait: 0, phase: this.rand() * 6.28, face: 1 }
+      this.retarget(c)
+      return c
+    })
+  }
+
+  retarget(c) {
+    const m = 40
+    c.tx = m + this.rand() * Math.max(1, this.w - 2 * m)
+    c.ty = m + this.rand() * Math.max(1, this.h - 2 * m)
+  }
+
+  step(c, dt, boost) {
+    const sp = c.speed * boost
+    let ax = 0
+    let ay = 0
+    if (c.wait > 0) {
+      c.wait -= dt
+      ax = -c.vx * 2
+      ay = -c.vy * 2
+    } else {
+      const dx = c.tx - c.x
+      const dy = c.ty - c.y
+      const d = Math.hypot(dx, dy)
+      if (d < 14) {
+        this.retarget(c)
+        c.wait = (0.6 + this.rand() * 2.4) / boost
+      } else {
+        ax = (dx / d) * sp - c.vx
+        ay = (dy / d) * sp - c.vy
       }
     }
-    return this.visible
-  }
-
-  petRow(name) {
-    const rows = this.pet.rows
-    for (const n of [name, name === 'running' ? 'running-right' : '', 'idle']) {
-      const i = n ? rows.indexOf(n) : -1
-      if (i >= 0) return { i, name: n }
+    const px = c.x - this.pointer.x
+    const py = c.y - this.pointer.y
+    const pd = Math.hypot(px, py)
+    if (pd < FLEE && pd > 0.01) {
+      const k = sp * 4 * (1 - pd / FLEE)
+      ax += (px / pd) * k
+      ay += (py / pd) * k
+      c.wait = 0
     }
-    return { i: 0, name: rows[0] }
+    const t = Math.min(1, dt * 2.2)
+    c.vx += ax * t
+    c.vy += ay * t
+    const v = Math.hypot(c.vx, c.vy)
+    if (v > sp * 2) {
+      c.vx *= (sp * 2) / v
+      c.vy *= (sp * 2) / v
+    }
+    const r = c.size / 2
+    c.x = Math.min(this.w - r, Math.max(r, c.x + c.vx * dt))
+    c.y = Math.min(this.h - r, Math.max(r, c.y + c.vy * dt))
+    if (Math.abs(c.vx) > 4) c.face = c.vx >= 0 ? 1 : -1
   }
 
-  /** Draw one frame for wall-clock time `now` (ms). Deterministic for a given state + now. */
+  /** Advance and draw for wall-clock time `now` (ms). */
   draw(now) {
-    const { ctx } = this
     const dt = this.last ? Math.min(0.1, (now - this.last) / 1000) : 0
     this.last = now
-    const still = this.reduced?.matches
-    const kind = current().kind || 'idle'
-    const station = STATION_OF[kind]
-    if (station) this.lastStation = STATIONS.indexOf(station)
-    const target = stationX(this.lastStation) + TILE / 2
-    const diff = target - this.petX
-    const moving = !still && Math.abs(diff) > 1
-    this.petX = still ? target : this.petX + Math.sign(diff) * Math.min(Math.abs(diff), SPEED * dt)
-
-    const dpr = this.canvas.width / BW
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-    ctx.clearRect(0, 0, BW, BH)
-    ctx.imageSmoothingEnabled = false
-    ctx.fillStyle = 'rgba(110,72,36,0.9)'
-    ctx.fillRect(0, SHELF, BW, 2)
-    ctx.fillStyle = 'rgba(0,0,0,0.35)'
-    ctx.fillRect(0, SHELF + 2, BW, 1)
-    const f = still ? 0 : Math.floor(now / 125) % 8
-    if (this.atlas.complete && this.atlas.naturalWidth) {
-      STATIONS.forEach((name, i) => {
-        const active = i === this.lastStation && station === name
-        if (active) {
-          const glow = ctx.createRadialGradient(stationX(i) + TILE / 2, SHELF - TILE / 2, 2, stationX(i) + TILE / 2, SHELF - TILE / 2, TILE * 0.75)
-          glow.addColorStop(0, 'rgba(255,230,140,0.30)')
-          glow.addColorStop(1, 'rgba(255,230,140,0)')
-          ctx.fillStyle = glow
-          ctx.fillRect(stationX(i) - 6, 0, TILE + 12, SHELF)
-          ctx.fillStyle = 'rgba(255,214,96,0.95)'
-          ctx.fillRect(stationX(i) + 4, SHELF, TILE - 8, 2)
-        }
-        const row = BENCH_ROWS.indexOf(active ? `${name}-${kind}` : `${name}-idle`)
-        ctx.drawImage(this.atlas, (active ? f : 0) * 16, row * 16, 16, 16, stationX(i), SHELF - TILE, TILE, TILE)
-      })
-      if (kind === 'done' || kind === 'error') {
-        const row = BENCH_ROWS.indexOf(`fx-${kind}`)
-        ctx.drawImage(this.atlas, f * 16, row * 16, 16, 16, stationX(this.lastStation), SHELF - TILE, TILE, TILE)
-      }
+    const kind = current().kind
+    const busy = Boolean(kind) && kind !== 'done' && kind !== 'error'
+    const boost = busy ? 1.7 : 1
+    if (kind === 'done' && !this.cheered) {
+      this.cheered = true
+      this.hop = 1
+    } else if (kind !== 'done') {
+      this.cheered = false
     }
-    if (this.pet && this.pet.img.complete && this.pet.img.naturalWidth) {
-      const p = this.pet
-      let pose = moving ? (diff > 0 ? 'running-right' : 'running-left') : PET_POSE[kind] || 'idle'
-      let mirror = false
-      if (moving && p.rows.indexOf(pose) < 0) {
-        mirror = diff < 0
-        pose = 'running'
-      }
-      const r = this.petRow(pose)
-      const n = p.frames(r.name)
-      const col = still ? 0 : Math.floor((now % p.loop) / (p.loop / n)) % n
-      const h = PET_H
-      const w = (p.fw / p.fh) * h
-      ctx.imageSmoothingEnabled = true
+    this.hop = Math.max(0, this.hop - dt * 1.6)
+    const still = this.reduced?.matches
+    const { ctx } = this
+    const dpr = this.canvas.width / Math.max(1, this.w)
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    ctx.clearRect(0, 0, this.w, this.h)
+    if (!(this.atlas.complete && this.atlas.naturalWidth)) return
+    ctx.imageSmoothingEnabled = false
+    const f = still ? 0 : Math.floor(now / (busy ? 80 : 130)) % 8
+    for (const c of this.list) {
+      if (!still) this.step(c, dt, boost)
+      const bob = still ? 0 : Math.sin((now / 1000) * 3 + c.phase) * 3 - Math.sin(this.hop * Math.PI) * 16
+      const row = CRITTER_ROWS.indexOf(c.name)
       ctx.save()
-      ctx.translate(this.petX, BH - h)
-      if (mirror) ctx.scale(-1, 1)
-      ctx.drawImage(p.img, col * p.fw, r.i * p.fh, p.fw, p.fh, -w / 2, 0, w, h)
+      ctx.translate(Math.round(c.x), Math.round(c.y + bob))
+      ctx.scale(c.face, 1)
+      ctx.drawImage(this.atlas, f * 16, row * 16, 16, 16, -c.size / 2, -c.size / 2, c.size, c.size)
       ctx.restore()
     }
   }
@@ -354,11 +363,11 @@ export class Workbench {
   start() {
     const loop = now => {
       this.raf = requestAnimationFrame(loop)
-      if (document.hidden || !this.visible) return
-      if (now - this.last >= 45) {
-        if (++this.frames % 10 === 0) this.place()
-        this.draw(now)
+      if (document.hidden || !this.visible) {
+        this.last = 0
+        return
       }
+      if (now - this.last >= 33) this.draw(now)
     }
     cancelAnimationFrame(this.raf)
     this.raf = requestAnimationFrame(loop)
@@ -366,6 +375,7 @@ export class Workbench {
 
   destroy() {
     cancelAnimationFrame(this.raf)
+    window.removeEventListener('pointermove', this.onMove)
     this.canvas.remove()
   }
 }
@@ -426,21 +436,17 @@ export default {
     }
     style.textContent = CSS
     detectTheme()
-    document.getElementById('hmt-bench')?.remove()
-    const request = (method, params) => host.request(method, params)
-    const bench = new Workbench(request)
-    window.__hmtBench = bench
-    bench.place()
-    bench.loadPet()
-    bench.start()
-    let ticks = 0
+    document.getElementById('hmt-critters')?.remove()
+    const critters = new Critters()
+    window.__hmtCritters = critters
+    critters.place()
+    critters.start()
     const tick = setInterval(() => {
       detectTheme()
       refresh()
-      bench.place()
-      if (++ticks % 8 === 0) bench.loadPet()
+      critters.place()
     }, 2000)
-    const placeOnResize = () => bench.place()
+    const placeOnResize = () => critters.place()
     window.addEventListener('resize', placeOnResize)
     const subscribe = ctx.onEvent || host.onEvent
     const unsubscribe = subscribe('*', onEvent)
@@ -448,7 +454,7 @@ export default {
     ctx.onDispose?.(() => {
       clearInterval(tick)
       window.removeEventListener('resize', placeOnResize)
-      bench.destroy()
+      critters.destroy()
       clearTimeout(flashTimer)
       if (typeof unsubscribe === 'function') unsubscribe()
       style.remove()
