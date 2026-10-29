@@ -208,11 +208,11 @@ const SPECIES = {
   tropical:{ size: 32, speed: 34, turn: 2.6, wander: 1.2, pause: [0.5, 1.5], pauseChance: 0.45, bob: 1, fps: 12, turns: true, max: 4, mode: 'swim' },
   squid:   { size: 32, speed: 20, turn: 0.8, wander: 0.4, pause: [1, 3], pauseChance: 0.5, bob: 4, fps: 6, turns: false, max: 1, mode: 'swim', calm: true },
   glowsquid:{ size: 32, speed: 20, turn: 0.8, wander: 0.4, pause: [1, 3], pauseChance: 0.5, bob: 4, fps: 6, turns: false, max: 1, mode: 'swim', calm: true },
-  axolotl: { size: 32, speed: 22, turn: 0, wander: 0, pause: [1, 3], pauseChance: 0.6, bob: 0, fps: 8, turns: true, max: 2, mode: 'ground' },
+  axolotl: { size: 32, speed: 22, turn: 0, wander: 0, pause: [1, 3], pauseChance: 0.6, bob: 0, fps: 8, turns: true, max: 2, mode: 'pool' },
   rabbit:  { size: 32, speed: 55, turn: 0, wander: 0, pause: [0.6, 2], pauseChance: 0.7, bob: 0, fps: 10, turns: true, max: 3, mode: 'ground', hop: true },
   camel:   { size: 48, speed: 18, turn: 0, wander: 0, pause: [2, 5], pauseChance: 0.5, bob: 0, fps: 5, turns: true, max: 1, mode: 'ground', calm: true },
   mooshroom:{ size: 32, speed: 16, turn: 0, wander: 0, pause: [2, 5], pauseChance: 0.6, bob: 0, fps: 6, turns: true, max: 3, mode: 'ground', calm: true },
-  warden:  { size: 48, speed: 10, turn: 0, wander: 0, pause: [3, 7], pauseChance: 0.7, bob: 0, fps: 4, turns: false, max: 1, mode: 'ground', calm: true }
+  warden:  { size: 48, speed: 10, turn: 0, wander: 0, pause: [3, 7], pauseChance: 0.7, bob: 0, fps: 4, turns: true, max: 1, mode: 'ground', calm: true }
 }
 const POOLS = {
   overworld: { n: [2, 5], pick: [['bee', 5], ['bee-pollen', 3], ['bee-angry', 1], ['allay', 2], ['parrot-red', 1], ['parrot-blue', 1], ['parrot-green', 1]] },
@@ -271,7 +271,15 @@ export class Critters {
       this.pointer.x = e.clientX
       this.pointer.y = e.clientY
     }
+    this.onLeave = () => {
+      this.pointer.x = -1e4
+      this.pointer.y = -1e4
+    }
+    this.fx = []
+    this.stings = 0
     window.addEventListener('pointermove', this.onMove, { passive: true })
+    document.documentElement.addEventListener('pointerleave', this.onLeave)
+    window.addEventListener('blur', this.onLeave)
   }
 
   place() {
@@ -461,6 +469,8 @@ export class Critters {
   step(c, dt, boost) {
     const S = SPECIES[c.sp]
     if (S.mode === 'ground') return this.stepGround(c, dt, boost)
+    if (S.mode === 'pool') return this.stepPool(c, dt, boost)
+    if (c.sp === 'bee' && this.beeMind(c, dt)) return
     const flying = c.state === 'fly'
     let target = Math.atan2(c.ty - c.y, c.tx - c.x)
     if (S.mode === 'swim') {
@@ -537,6 +547,164 @@ export class Critters {
     }
   }
 
+  /** Bees: harass one (come close, back off, three times within 8 s) and it gets angry,
+   *  shakes for half a second, charges the cursor, bounces off, flees, then calms down. */
+  beeMind(c, dt) {
+    if (c.state !== 'fly' || this.reduced?.matches) return false
+    const P = this.pointer
+    const live = P.x > -1000
+    const d = live ? Math.hypot(c.x - P.x, c.y - P.y) : 1e9
+    if (!c.mood || c.mood === 'calm') {
+      c.mood = 'calm'
+      if (!c.near && d < 80) {
+        c.near = true
+        ;(c.pokes = c.pokes || []).push(this.t)
+      } else if (c.near && d > 130) {
+        c.near = false
+      }
+      c.pokes = (c.pokes || []).filter(t => this.t - t < 8)
+      const busyBee = this.list.some(o => o !== c && o.mood && o.mood !== 'calm')
+      if (c.pokes.length >= 3 && this.t >= (c.coolUntil || 0) && !busyBee) {
+        c.mood = 'warn'
+        c.moodT = 0
+        c.pokes = []
+        c.v0 = c.v
+        c.v = 'bee-angry'
+        c.wait = 0
+      }
+      if (c.mood === 'calm') return false
+    }
+    c.moodT += dt
+    if (c.mood === 'warn') {
+      c.spd = 0
+      c.jx = Math.round((this.rand() - 0.5) * 4)
+      if (c.moodT > 0.5) {
+        c.mood = 'charge'
+        c.moodT = 0
+        c.jx = 0
+      }
+    } else if (c.mood === 'charge') {
+      if (!live || c.moodT > 2) {
+        this.beeFlee(c)
+      } else {
+        const want = Math.atan2(P.y - c.y, P.x - c.x)
+        const da = Math.atan2(Math.sin(want - c.h), Math.cos(want - c.h))
+        c.h += Math.max(-7 * dt, Math.min(7 * dt, da))
+        c.spd += (280 - c.spd) * Math.min(1, dt * 4)
+        if (d < 16) {
+          this.burst(c.x + Math.cos(c.h) * 8, c.y + Math.sin(c.h) * 8)
+          this.stings++
+          c.h += Math.PI
+          c.spd = 170
+          c.mood = 'bounce'
+          c.moodT = 0
+        }
+      }
+    } else if (c.mood === 'bounce') {
+      c.spd *= Math.max(0, 1 - dt * 5)
+      if (c.moodT > 0.3) this.beeFlee(c)
+    } else if (c.mood === 'flee') {
+      c.spd += (SPECIES.bee.speed * 3.2 - c.spd) * Math.min(1, dt * 3)
+      if (c.moodT > 1.5) {
+        c.mood = 'calm'
+        c.v = c.v0 || c.v
+        c.coolUntil = this.t + 15
+        c.near = d < 80
+        this.retarget(c)
+      }
+    }
+    if (c.mood !== 'warn') {
+      c.x += Math.cos(c.h) * c.spd * dt
+      c.y += Math.sin(c.h) * c.spd * dt
+      const r = SPECIES.bee.size / 2
+      if (c.x < r || c.x > this.w - r) {
+        c.x = Math.min(this.w - r, Math.max(r, c.x))
+        c.h = Math.PI - c.h
+      }
+      if (c.y < r || c.y > this.h - r) {
+        c.y = Math.min(this.h - r, Math.max(r, c.y))
+        c.h = -c.h
+      }
+    }
+    this.turnUpdate(c, dt, Math.cos(c.h) * c.spd)
+    return true
+  }
+
+  beeFlee(c) {
+    const P = this.pointer
+    c.mood = 'flee'
+    c.moodT = 0
+    if (P.x > -1000) c.h = Math.atan2(c.y - P.y, c.x - P.x)
+  }
+
+  burst(x, y) {
+    for (let k = 0; k < 8; k++) {
+      const a = (k / 8) * Math.PI * 2
+      this.fx.push({ x, y, vx: Math.cos(a) * 70, vy: Math.sin(a) * 70 - 20, life: 0.45 })
+    }
+  }
+
+  /** Any angry bee calms down (window hidden, theme switched off, ...). */
+  calmAll() {
+    for (const c of this.list) {
+      if (c.mood && c.mood !== 'calm') {
+        c.mood = 'calm'
+        c.v = c.v0 || c.v
+        c.jx = 0
+        c.coolUntil = this.t + 15
+      }
+      c.pokes = []
+      c.near = false
+    }
+  }
+
+  /** Axolotls live in the lush-cave pools: swim back and forth, rest, dart away from the cursor. */
+  stepPool(c, dt, boost) {
+    const S = SPECIES[c.sp]
+    if (c.state === 'leave') {
+      c.x = -999
+      return
+    }
+    const ps = this.pools ? this.pools() : []
+    if (!ps.length) return this.stepGround(c, dt, boost)
+    if (c.pool == null || c.pool >= ps.length) {
+      const used = new Set(this.list.filter(o => o !== c && o.pool != null).map(o => o.pool))
+      const free = ps.map((_, i) => i).filter(i => !used.has(i))
+      c.pool = free.length ? free[Math.floor(this.rand() * free.length)] : Math.floor(this.rand() * ps.length)
+      c.x = (ps[c.pool].x0 + ps[c.pool].x1) / 2
+      c.tx = c.x
+      c.state = 'fly'
+    }
+    const P = ps[c.pool]
+    const r = S.size * 0.4
+    const lo = P.x0 + r
+    const hi = Math.max(lo, P.x1 - r)
+    c.y = P.top + (P.bottom - P.top) * 0.45 + (dt ? Math.sin(this.t * 1.6 + c.phase) * 1.5 : 0)
+    let want = S.speed * boost
+    if (c.wait > 0) {
+      c.wait -= dt
+      want = 0
+    }
+    if (dt && Math.abs(c.x - this.pointer.x) < 70 && Math.abs(c.y - this.pointer.y) < 60) {
+      c.tx = c.x - lo > hi - c.x ? lo : hi
+      want = S.speed * 2.5
+      c.wait = 0
+    }
+    if (c.tx < lo || c.tx > hi) c.tx = lo + this.rand() * (hi - lo)
+    const dir = Math.sign(c.tx - c.x) || c.face
+    if (c.turnT >= 0) want = 0
+    c.spd += (want - c.spd) * Math.min(1, dt * 3)
+    if (c.turnT < 0 && dir === c.face) c.x += dir * c.spd * dt
+    c.x = Math.min(hi, Math.max(lo, c.x))
+    c.h = dir > 0 ? 0 : Math.PI
+    if (dt && Math.abs(c.tx - c.x) < 4) {
+      c.tx = lo + this.rand() * (hi - lo)
+      if (this.rand() < S.pauseChance) c.wait = S.pause[0] + this.rand() * (S.pause[1] - S.pause[0])
+    }
+    c.idle = c.wait > 0 && c.spd < 6 ? c.idle + dt : 0
+    this.turnUpdate(c, dt, dir * Math.max(c.spd, 10))
+  }
+
   /** Ground level: just above the status bar (the grass strip the pet walks on). */
   floorY(c) {
     const bar = document.querySelector('[data-slot="statusbar"]')
@@ -563,6 +731,7 @@ export class Critters {
     }
     if (c.turnT >= 0) want = 0
     c.spd += (want - c.spd) * Math.min(1, dt * 3)
+    if (!S.turns) c.face = dir
     if (c.turnT < 0 && dir === c.face) c.x += dir * c.spd * dt
     c.h = dir > 0 ? 0 : Math.PI
     if (flying) {
@@ -597,6 +766,7 @@ export class Critters {
     const still = this.reduced?.matches
     for (const c of this.list) {
       if (c.sp === 'shulker') this.stepShulker(c, still ? 0 : dt)
+      else if (SPECIES[c.sp].mode === 'pool') this.stepPool(c, still ? 0 : dt, boost)
       else if (!still) this.step(c, dt, boost)
     }
     if (!still) {
@@ -626,6 +796,7 @@ export class Critters {
         }
         continue
       }
+      if (c.x < -500) continue
       const bob = still ? 0 : Math.sin(this.t * 2.4 + c.phase) * S.bob - Math.sin(this.hop * Math.PI) * 16 - (S.hop && c.hopP ? Math.abs(Math.sin(c.hopP * Math.PI)) * 7 : 0)
       const hasFront = CRITTER_ROWS.includes(`${c.v}:front`)
       let view = 'front'
@@ -635,11 +806,15 @@ export class Critters {
         view = 'side'
         if (c.turnT >= 0) {
           const p = c.turnT / TURN
-          if (p < 1 / 3) sx = 1 - p * 3 * 0.65
-          else if (p < 2 / 3) {
-            if (hasFront) view = 'front'
-            else sx = 0.35
-          }
+          if (!hasFront) {
+            // no front view: squeeze, swap sides at the midpoint, unsqueeze
+            if (p < 0.5) sx = 1 - p * 1.3
+            else {
+              face = c.nextFace
+              sx = 0.35 + (p - 0.5) * 1.3
+            }
+          } else if (p < 1 / 3) sx = 1 - p * 3 * 0.65
+          else if (p < 2 / 3) view = 'front'
           else {
             face = c.nextFace
             sx = 0.35 + (p - 2 / 3) * 3 * 0.65
@@ -652,10 +827,18 @@ export class Critters {
       if (row < 0) continue
       const f = still ? 0 : Math.floor(this.t * S.fps + c.phase * 3) % 8
       ctx.save()
-      ctx.translate(Math.round(c.x), Math.round(c.y + bob))
+      ctx.translate(Math.round(c.x + (c.jx || 0)), Math.round(c.y + bob))
       if (view === 'side') ctx.scale(face * sx, 1)
       ctx.drawImage(this.atlas, f * 16, row * 16, 16, 16, -S.size / 2, -S.size / 2, S.size, S.size)
       ctx.restore()
+    }
+    this.fx = this.fx.filter(p => (p.life -= dt) > 0)
+    ctx.fillStyle = 'rgba(255,230,120,0.9)'
+    for (const p of this.fx) {
+      p.x += p.vx * dt
+      p.y += p.vy * dt
+      p.vy += 120 * dt
+      ctx.fillRect(Math.round(p.x), Math.round(p.y), 3, 3)
     }
   }
 
@@ -664,6 +847,7 @@ export class Critters {
       this.raf = requestAnimationFrame(loop)
       if (document.hidden || !this.visible) {
         this.last = 0
+        this.calmAll()
         return
       }
       if (now - this.last >= 33) this.draw(now)
@@ -675,6 +859,8 @@ export class Critters {
   destroy() {
     cancelAnimationFrame(this.raf)
     window.removeEventListener('pointermove', this.onMove)
+    document.documentElement.removeEventListener('pointerleave', this.onLeave)
+    window.removeEventListener('blur', this.onLeave)
     this.canvas.remove()
   }
 }
@@ -696,8 +882,8 @@ const SCENES = {
   end: { sky: 'rgba(130,80,190,0.18)', end: true, layers: [], p: 'mote', n: 26, pc: [200, 150, 255] },
   ocean: { sky: 'rgba(40,120,170,0.2)', shape: 'hills', rays: true, layers: [['rgba(60,110,130,0.18)', 0.12, 1], ['rgba(120,150,120,0.2)', 0.08, 2.5]],
     props: [['kelp', 4], ['seagrass', 3], ['coral', 3]], p: 'bubble', n: 30, pc: [190, 235, 255] },
-  lush: { sky: 'rgba(90,150,80,0.14)', shape: 'hills', ceil: { color: 'rgba(80,110,90,0.2)', frac: 0.12, props: [['vine', 3], ['berryvine', 2]] },
-    layers: [['rgba(80,130,70,0.18)', 0.10, 1], ['rgba(110,160,80,0.22)', 0.07, 2.5]], props: [['azalea', 3], ['dripleaf', 2]], p: 'spore', n: 22, pc: [255, 190, 230] },
+  lush: { sky: 'rgba(90,150,80,0.14)', shape: 'hills', pools: 2, ceil: { color: 'rgba(80,110,90,0.2)', frac: 0.12, props: [['vine', 3], ['berryvine', 2]] },
+    layers: [['rgba(80,130,70,0.18)', 0.10, 0.4], ['rgba(110,160,80,0.22)', 0.09, 0]], props: [['azalea', 3], ['dripleaf', 2]], p: 'spore', n: 22, pc: [255, 190, 230] },
   desert: { sky: 'rgba(230,180,100,0.18)', shape: 'hills', layers: [['rgba(200,160,100,0.18)', 0.14, 1], ['rgba(230,200,130,0.22)', 0.09, 2.5]],
     props: [['cactus', 4], ['deadbush', 3], ['temple', 1]], p: 'sand', n: 34, pc: [255, 225, 160] },
   mushroom: { sky: 'rgba(170,110,180,0.16)', shape: 'hills', layers: [['rgba(120,90,140,0.18)', 0.14, 1], ['rgba(150,120,170,0.22)', 0.09, 2.5]],
@@ -836,6 +1022,21 @@ export class Scene {
       this.ceil = C
     }
     this.end = cfg.end ? this.buildEnd() : null
+    this.poolList = []
+    if (cfg.pools && front) {
+      for (const u of [0.24, 0.74].slice(0, cfg.pools)) {
+        const w = 34
+        const d = 8
+        const x0 = Math.max(2, Math.min(LW - w - 2, Math.round(u * LW - w / 2)))
+        let hb = 12
+        for (let x = x0; x < x0 + w; x++) hb = Math.max(hb, front.hts[x])
+        front.hts[x0 - 1] = Math.max(front.hts[x0 - 1], hb)
+        front.hts[x0 + w] = Math.max(front.hts[x0 + w], hb)
+        for (let x = x0; x < x0 + w; x++) front.hts[x] = hb - d
+        front.props = front.props.filter(p => p.x + PROP_BOX[p.name][2] < x0 - 2 || p.x > x0 + w + 2)
+        this.poolList.push({ x0, w, hb, d })
+      }
+    }
     this.parts = Array.from({ length: cfg.n }, () => this.particle(cfg.p, true))
   }
 
@@ -882,8 +1083,48 @@ export class Scene {
     return { mode: 'outer', islands }
   }
 
+  /** Obsidian column: stacked blocks with seams, purple specks and a lit left edge (reads as solid
+   *  stone, not a light beam, even though the scene layer can only lighten the page). */
+  obsidian(w, h, seed) {
+    const c = document.createElement('canvas')
+    c.width = w
+    c.height = h
+    const g = c.getContext('2d')
+    g.fillStyle = 'rgba(55,38,90,0.20)'
+    g.fillRect(0, 0, w, h)
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const v = ((x * 73856093) ^ (y * 19349663) ^ (seed * 83492791)) >>> 0
+        if (v % 9 === 0) {
+          g.fillStyle = 'rgba(170,120,240,0.45)'
+          g.fillRect(x, y, 1, 1)
+        }
+      }
+      if (y % 4 === 0) {
+        g.fillStyle = 'rgba(140,105,200,0.32)'
+        g.fillRect(0, y, w, 1)
+        g.fillRect(((y / 4) % 2) * Math.floor(w / 2), y, 1, 4)
+      }
+    }
+    g.fillStyle = 'rgba(200,170,255,0.5)'
+    g.fillRect(0, 0, 1, h)
+    g.fillRect(0, 0, w, 1)
+    return c
+  }
+
   bob(isl) {
     return this.reduced?.matches ? 0 : Math.round(Math.sin(this.t * 0.35 + isl.ph))
+  }
+
+  /** Window-space water rectangles (lush-cave pools) for the axolotls. */
+  pools() {
+    if (!this.visible || !this.poolList || !this.poolList.length) return []
+    return this.poolList.map(P => ({
+      x0: this.rect.x + P.x0 * PX,
+      x1: this.rect.x + (P.x0 + P.w) * PX,
+      top: this.rect.y + (this.LH - P.hb) * PX,
+      bottom: this.rect.y + (this.LH - P.hb + P.d) * PX
+    }))
   }
 
   /** Window-space points where shulkers can sit (outer End only). */
@@ -960,13 +1201,8 @@ export class Scene {
       for (const p of E.pillars) {
         const top = LH - p.h
         const x0 = p.x - (p.w >> 1)
-        g.fillStyle = 'rgba(100,70,150,0.34)'
-        g.fillRect(x0, top, p.w, p.h)
-        g.fillStyle = 'rgba(60,40,100,0.30)'
-        g.fillRect(x0 + p.w - 2, top, 2, p.h)
-        g.fillStyle = 'rgba(170,130,230,0.26)'
-        g.fillRect(x0, top, 1, p.h)
-        g.fillRect(x0, top, p.w, 1)
+        if (!p.tex) p.tex = this.obsidian(p.w, p.h, p.x)
+        g.drawImage(p.tex, x0, top)
         if (p.cage) {
           g.fillStyle = 'rgba(210,210,220,0.26)'
           for (let k = -1; k <= p.w; k += 2) g.fillRect(x0 + k, top - 6, 1, 6)
@@ -1063,6 +1299,13 @@ export class Scene {
         this.prop(g, pr.name, x, LH - hh - h + 1, 0.5)
       }
     })
+    for (const P of this.poolList || []) {
+      g.fillStyle = 'rgba(70,140,230,0.30)'
+      g.fillRect(P.x0, LH - P.hb, P.w, P.d)
+      const sh = 0.32 + 0.1 * Math.sin(this.t * 1.5 + P.x0)
+      g.fillStyle = `rgba(170,220,255,${sh.toFixed(3)})`
+      g.fillRect(P.x0, LH - P.hb, P.w, 1)
+    }
     if (cfg.pulse && this.layers.length) {
       const fl = this.layers[this.layers.length - 1]
       const off = Math.floor(this.t * fl.speed) % fl.L
@@ -1385,6 +1628,7 @@ export default {
     const critters = new Critters()
     const scene = new Scene(undefined, () => critters.endMode)
     critters.perches = () => scene.perches()
+    critters.pools = () => scene.pools()
     const wipe = new Wipe()
     const rot = new Rotator(ctx.storage, wipe, () => {
       critters.place()

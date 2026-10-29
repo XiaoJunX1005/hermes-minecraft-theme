@@ -441,6 +441,48 @@ def warden_front(f):
     return g.im
 
 
+def warden_side(f):
+    """Warden walking (facing right): heavy, slow stride, chest glows."""
+    g = G()
+    body, head, dk = (20, 42, 52, 255), (24, 54, 64, 255), (14, 30, 38, 255)
+    step = f % 4 < 2
+    g.rect(5, 13, 2, 3 if step else 2, dk)
+    g.rect(9, 13, 2, 2 if step else 3, dk)
+    g.rect(5, 4, 7, 9, body)
+    g.rect(6, 0, 6, 4, head)
+    g.p(5, 0, (60, 200, 210, 255))
+    g.p(4, 1, (60, 200, 210, 255))
+    glow = (40, 230, 240, 255) if f % 8 < 4 else (24, 150, 160, 255)
+    g.rect(9, 6, 2, 3, glow)
+    arm = 1 if step else -1
+    g.rect(7 + arm, 6, 2, 6, dk)
+    g.outline((50, 110, 120, 255))
+    return g.im
+
+
+def fish_front(f, body, belly, fin, L=11, H=5, stripes=()):
+    """Fish seen head-on: oval body, eyes on the sides, little side fins paddling."""
+    g = G()
+    for y in range(5, 13):
+        for x in range(16):
+            if ((x - 7.5) / 3.6) ** 2 + ((y - 8.5) / 3.4) ** 2 <= 1:
+                g.p(x, y, belly if y >= 10 else body)
+    for sx in stripes[:1]:
+        for y in range(5, 13):
+            if g.im.getpixel((7, y))[3]:
+                g.p(7, y, (245, 245, 245, 255))
+                g.p(8, y, (245, 245, 245, 255))
+    g.rect(7, 3, 2, 2, fin)
+    fy = 9 + [0, 1, 1, 0, 0, -1, -1, 0][f]
+    g.rect(1, fy, 3, 1, fin)
+    g.rect(12, fy, 3, 1, fin)
+    g.p(5, 8, (20, 20, 24, 255))
+    g.p(10, 8, (20, 20, 24, 255))
+    g.rect(7, 10, 2, 1, (90, 40, 40, 255))
+    g.outline()
+    return g.im
+
+
 FISH = {
     "cod": ((176, 150, 110, 255), (214, 196, 160, 255), (140, 110, 80, 255), 11, 5, ()),
     "salmon": ((200, 80, 72, 255), (230, 150, 130, 255), (150, 60, 60, 255), 13, 6, ()),
@@ -461,7 +503,7 @@ SPRITES = {
     "ghast": (None, ghast_front),
     "blaze": (None, blaze_front),
     "shulker": (None, shulker_front),
-    **{k: ((lambda f, a=a: fish_side(f, *a)), None) for k, a in FISH.items()},
+    **{k: ((lambda f, a=a: fish_side(f, *a)), (lambda f, a=a: fish_front(f, *a))) for k, a in FISH.items()},
     "squid": (None, lambda f: squid_front(f)),
     "glowsquid": (None, lambda f: squid_front(f, True)),
     "axolotl-pink": (lambda f: axolotl_side(f, (240, 160, 190, 255), (220, 90, 140, 255)), None),
@@ -471,7 +513,7 @@ SPRITES = {
     "camel": (camel_side, None),
     "mooshroom-red": (lambda f: mooshroom_side(f, (200, 50, 40, 255), (240, 240, 235, 255), (210, 40, 40, 255)), None),
     "mooshroom-brown": (lambda f: mooshroom_side(f, (150, 100, 60, 255), (220, 200, 170, 255), (150, 110, 70, 255)), None),
-    "warden": (None, warden_front),
+    "warden": (warden_side, warden_front),
 }
 ROWS = [f"{v}:{view}" for v, (side, front) in SPRITES.items()
         for view, fn in (("side", side), ("front", front)) if fn]

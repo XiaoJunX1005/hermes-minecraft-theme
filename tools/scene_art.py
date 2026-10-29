@@ -183,20 +183,29 @@ def portal() -> Spr:
 
 
 def kelp() -> Spr:
-    s = Spr(6, 30)
+    """Kelp: wavy stalk with broad leaf blades alternating left/right, bulb on top."""
+    s = Spr(10, 30)
+    stalk, leaf, lit = (60, 120, 60, 255), (80, 150, 70, 255), (120, 190, 100, 255)
     for y in range(30):
-        x = 2 + round(math.sin(y / 4) * 1.5)
-        s.rect(x, y, 2, 1, (70, 150, 80, 255))
-        if y % 5 == 0:
-            s.p(x + 2, y, (110, 190, 100, 255))
-            s.p(x - 1, y + 1, (110, 190, 100, 255))
+        x = 4 + round(math.sin(y / 4) * 1.2)
+        s.rect(x, y, 2, 1, stalk)
+        if y % 4 == 1:
+            side = -1 if (y // 4) % 2 else 1
+            for k in range(1, 4):
+                s.p(x + (1 + k if side > 0 else -k), y + (k > 1), leaf)
+            s.p(x + (2 if side > 0 else -1), y, lit)
+    s.rect(3, 0, 4, 2, lit)
     return s
 
 
 def seagrass() -> Spr:
-    s = Spr(10, 9)
-    for x, h in ((1, 6), (3, 9), (5, 7), (7, 9), (9, 5)):
-        s.rect(x, 9 - h, 1, h, (90, 170, 90, 255))
+    """Seagrass: a dense low clump of blades in two greens."""
+    s = Spr(14, 11)
+    for x, h, c in ((0, 5, 0), (1, 8, 1), (2, 10, 0), (3, 7, 1), (5, 11, 0), (6, 9, 1), (7, 6, 0),
+                    (8, 10, 1), (9, 8, 0), (10, 11, 1), (11, 7, 0), (12, 9, 1), (13, 5, 0)):
+        col = (80, 160, 80, 255) if c else (110, 190, 100, 255)
+        for y in range(11 - h, 11):
+            s.p(x + (1 if y < 11 - h + 2 and x % 3 == 0 else 0), y, col)
     return s
 
 
@@ -227,18 +236,24 @@ def dripleaf() -> Spr:
 
 
 def vine() -> Spr:
-    s = Spr(5, 22)
-    for y in range(22):
-        s.p(2, y, (70, 130, 60, 255))
-        if y % 3 == 0:
-            s.p(1 if y % 6 else 3, y, (110, 180, 80, 255))
+    """Cave vine: thin stem with leaf pairs."""
+    s = Spr(7, 24)
+    for y in range(24):
+        x = 3 + (1 if (y // 5) % 2 else 0)
+        s.p(x, y, (60, 120, 55, 255))
+        if y % 3 == 1:
+            s.rect(x - 2, y, 2, 1, (100, 170, 80, 255))
+            s.rect(x + 1, y + 1, 2, 1, (90, 160, 70, 255))
     return s
 
 
 def berryvine() -> Spr:
+    """Cave vine carrying glow berries: bright orange 3x3 clusters with a hot centre."""
     s = vine()
-    for y in (5, 11, 17):
-        s.rect(1 if y % 2 else 2, y, 2, 2, (255, 170, 60, 255))
+    for y in (4, 11, 18):
+        s.rect(1, y, 3, 3, (240, 140, 40, 255))
+        s.p(2, y + 1, (255, 230, 140, 255))
+        s.rect(4, y + 3, 2, 2, (240, 140, 40, 255))
     return s
 
 
