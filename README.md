@@ -1,118 +1,142 @@
 <div align="center">
 
-# ⛏ Hermes × Minecraft Theme
+# ⛏ Hermes × Minecraft 主題
 
-**Minecraft 風格、會動的 [Hermes Agent](https://github.com/NousResearch/hermes-agent) 主題（桌面版 / TUI / CLI）**
+非官方的 Minecraft 風格 [Hermes Agent](https://github.com/NousResearch/hermes-agent) 主題，含 5 個世界、10 隻寵物與像素字型。
 
 ![preview](docs/preview.gif)
 
-<sub>預覽圖是用真實主題 CSS 套在模擬頁面上錄的示意圖。</sub>
+<sub>上圖是用主題實際的 CSS 套在模擬頁面上錄製的示意圖，不是 Hermes 實機截圖。</sub>
 
 </div>
 
-## ✨ 特色
+## 內容
 
-| | 動畫 / 效果 |
-|---|---|
-| 🏝 **漂浮空島** | 新工作階段畫面中央有一座慢慢旋轉、漂浮的體素空島；5 個世界可選 |
-| 🔤 **Zpix 像素字** | 中英數字全 12px 點陣（繁中可用），jsDelivr 線上載入，離線退回微軟正黑體 |
-| 🌌 **夜空** | 上方星星與緩慢飄動的方塊雲（顏色隨世界變化） |
-| 🟩 **經驗值條** | Hermes 回覆時輸入框下方跑 XP 條 |
-| ⛏ **思考中** | 8 種會動的方塊 / 生物圖示，每一輪對話輪流換一個 |
-| 💜 **附魔光澤** | 你的訊息泡泡有紫色附魔光掃過 |
-| 🌱 **地表狀態列** | 每個世界自己的地表條（草地 / 緋紅菌岩 / 終界石 / 雪地 / 落花草地） |
-| 🪨 **石頭按鈕** | 石材紋理 + 立體斜角，滑過變藍底黃字 |
-| 🐾 **寵物** | 4 種苦力怕 + 豬、雞、史萊姆、蜜蜂、終界使者，全部 9 種動畫狀態 |
+- **5 個世界主題**：主世界、地獄、終界、雪原、櫻花林。每個世界有自己的漂浮空島、主色、星空顏色、首頁標語與底部地表條。
+- **像素字型**：使用 [Zpix](https://github.com/SolidZORO/zpix-pixel-font)，中文、英文、數字都是點陣字。字型從網路載入，連不上時會改用微軟正黑體。
+- **思考中圖示**：8 種會動的方塊與生物，不同回合會顯示不同圖示。
+- **10 隻寵物**：4 種苦力怕、豬、雞、史萊姆、蜜蜂、終界使者，以及原創的小燈籠。每隻都有 9 種動作（待機、跑步、開心、跳躍、失敗、等待、閱讀等）。
+- **其他介面細節**：石頭質感按鈕、經驗值條（回覆中顯示）、方塊雲、附魔光澤的訊息泡泡。
 
-## 🏝 世界
+動畫效果主要在**桌面版**。終端機版（CLI / TUI）會套用配色、Logo、提示文字與寵物（終端機支援時）。
 
-![islands](docs/islands.gif)
+## 安裝與更新
 
-| 主題 | 世界 | 空島 | 主色 / 標語 |
-|---|---|---|---|
-| `minecraft` | 主世界 | 草地、樹、小池塘、燈 | 草綠 · *Also try Minecraft!* |
-| `minecraft-nether` | 地獄 | 緋紅菌岩、熔岩池、緋紅/詭異蕈、玄武岩 | 熔岩橘 · *Also try the Overworld!* |
-| `minecraft-end` | 終界 | 終界石、黑曜石柱 + 終界水晶、歌萊植物、小浮石 | 紫 · *The End?* |
-| `minecraft-snow` | 雪原 | 雪地、雲杉、冰塊、冷光燈 | 冰藍 · *Brrr! Bring a coat!* |
-| `minecraft-cherry` | 櫻花林 | 櫻花樹、落花、池塘 | 櫻粉 · *Petals everywhere!* |
-
-切換：`hermes config set display.skin minecraft-nether`（或在 Appearance 直接選），一秒內即時換。
-
-## ⛏ 思考中
-
-![thinking](docs/thinking.gif)
-
-草方塊（轉動）、鑽石礦（閃光）、熔爐（火焰）、TNT（引信閃爍）、挖掘中（裂開→碎掉）、史萊姆（彈跳）、蜜蜂（振翅）、雞（啄地）。
-依對話輪次輪流出現：第 1 輪草方塊、第 2 輪鑽石礦…第 9 輪再從頭。
-
-## 🐾 生物寵物
-
-![mobs](docs/mobs.gif)
-
-| 寵物 | 生物 |
-|---|---|
-| `mc-pig` | 豬 |
-| `mc-chicken` | 雞 |
-| `mc-slime` | 史萊姆（走路時會壓扁彈跳） |
-| `mc-bee` | 蜜蜂（一直在飛） |
-| `mc-enderman` | 終界使者（身邊有紫色粒子） |
-
-切換：`hermes pets select mc-bee`
-
-## 🐸 苦力怕
-
-![creepers](docs/creepers.gif)
-
-| 寵物 | 造型 |
-|---|---|
-| `creeper-blocky`（預設） | 方正 Q 版：方頭方身、方眼、經典嘴，有光影 |
-| `creeper-carved` | 稜角立體：直角寬頭、亮頂面、凹刻的臉 |
-| `creeper-tall` | 接近原版比例：頭較小、身體較長 |
-| `creeper-buddy` | 圓潤 Q 版：圓眼、亮點、腮紅 |
-| `lantern-buddy` | 另一隻原創小燈籠 |
-
-切換：`hermes pets select creeper-carved`
-
-## 📦 安裝
+**Windows（PowerShell）**
 
 ```powershell
 irm https://raw.githubusercontent.com/XiaoJunX1005/hermes-minecraft-theme/main/install.ps1 | iex
 ```
 
+**macOS / Linux / WSL / Git Bash**
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/XiaoJunX1005/hermes-minecraft-theme/main/install.sh | bash
 ```
 
-手動：把 `skins/*.yaml` 複製到 Hermes home 的 `skins/`（Windows：`%LOCALAPPDATA%\hermes\skins\`），`pets/*` 複製到 `pets/`。
+安裝程式會：
 
-**還原：** `hermes config set display.skin default`，寵物 `hermes pets off`。
+1. 把所有主題與寵物先下載到暫存資料夾，全部成功後才更新到 Hermes 的資料夾（下載失敗不會動到現有檔案）。
+2. 第一次安裝時套用 `minecraft` 主題與 `creeper-blocky` 寵物。
+3. 之後再執行就是**更新**，會保留你目前選的世界與寵物。
 
-## 🛠 開發
+安裝時想直接指定，可以先設定環境變數：
 
+```powershell
+$env:HMT_SKIN = 'minecraft-end'; $env:HMT_PET = 'mc-bee'
+irm https://raw.githubusercontent.com/XiaoJunX1005/hermes-minecraft-theme/main/install.ps1 | iex
 ```
-src/skin.base.yaml      調色盤、spinner、品牌文字、tool emoji
-src/desktop.css         桌面版 customCSS（{{...}} 由 build 依世界填入）
-tools/voxel.py          5 種空島 + 光線投射渲染器
-tools/pixels.py         材質（32×32 草地 / 泥土）
-tools/build_skin.py     → skins/*.yaml（5 個世界）+ docs/islands.gif、grass-block.gif
-tools/make_creeper.py   → pets/creeper-*/ + docs/creepers.gif
-tools/make_mobs.py      → pets/mc-*/ + docs/mobs.gif
-tools/make_icons.py     → 思考中圖示 atlas（build_skin 會內嵌）
-tools/make_lantern.py   → pets/lantern-buddy/
-tools/make_preview.py   → docs/preview.html；tools/record_gif.py → docs/preview.gif
+
+## 切換世界
+
+```bash
+hermes config set display.skin minecraft-nether
 ```
+
+也可以在桌面版的「外觀」設定直接選。
+
+![islands](docs/islands.gif)
+
+| 主題名稱 | 世界 | 空島上有 |
+|---|---|---|
+| `minecraft` | 主世界 | 樹、小池塘、燈 |
+| `minecraft-nether` | 地獄 | 熔岩池、緋紅蕈、詭異蕈、玄武岩 |
+| `minecraft-end` | 終界 | 黑曜石柱與終界水晶、歌萊植物 |
+| `minecraft-snow` | 雪原 | 雲杉、冰塊、燈 |
+| `minecraft-cherry` | 櫻花林 | 櫻花樹、落花、池塘 |
+
+## 切換寵物
+
+```bash
+hermes pets select mc-bee
+hermes pets off          # 關閉寵物
+```
+
+![creepers](docs/creepers.gif)
+
+![mobs](docs/mobs.gif)
+
+| 寵物名稱 | 說明 |
+|---|---|
+| `creeper-blocky` | 苦力怕：方正 Q 版（預設） |
+| `creeper-carved` | 苦力怕：稜角分明、臉部內凹 |
+| `creeper-tall` | 苦力怕：接近遊戲比例 |
+| `creeper-buddy` | 苦力怕：圓潤 Q 版，有腮紅 |
+| `mc-pig` | 豬 |
+| `mc-chicken` | 雞 |
+| `mc-slime` | 史萊姆 |
+| `mc-bee` | 蜜蜂 |
+| `mc-enderman` | 終界使者 |
+| `lantern-buddy` | 原創小燈籠 |
+
+## 思考中圖示
+
+![thinking](docs/thinking.gif)
+
+草方塊、鑽石礦、熔爐、TNT、挖掘中的石頭、史萊姆、蜜蜂、雞，依對話中的訊息順序輪流出現，不是隨機，也不是依 Hermes 正在做的事決定。
+
+## 用另一台電腦連線使用
+
+如果筆電是透過桌面版連到桌電的 Hermes：
+
+- 畫面的配色與動畫由**桌電**提供。
+- 要改主題或寵物，請在**桌電**安裝或切換，然後重新開啟筆電的 Hermes 桌面版（或重新連線），讓它重新讀取清單。
+- 如果筆電重新開啟後主題有更新、寵物清單卻還是舊的，請在**筆電**也執行一次上面的安裝指令。
+
+## 還原
+
+```bash
+hermes config set display.skin default
+hermes pets off
+```
+
+## 開發
+
+素材全部由 `tools/` 裡的 Python 程式產生，需要 Python 3.10 以上與 Pillow。請修改 `src/` 或 `tools/`，不要直接改 `skins/*.yaml`（那是產生出來的檔案）。
 
 ```bash
 pip install pillow
-python tools/make_creeper.py
-python tools/make_mobs.py
-python tools/build_skin.py --install                     # 保留目前的世界與寵物
-python tools/build_skin.py --install --pet=mc-bee
-python tools/build_skin.py --install --skin=minecraft-end
+python tools/make_creeper.py      # 苦力怕 → pets/creeper-*/、docs/creepers.gif
+python tools/make_mobs.py         # 其他生物 → pets/mc-*/、docs/mobs.gif
+python tools/make_lantern.py      # 小燈籠 → pets/lantern-buddy/
+python tools/build_skin.py        # 5 個世界 → skins/*.yaml、docs/islands.gif、docs/thinking.gif
+python tools/build_skin.py --install                 # 產生並安裝到本機，保留目前的選擇
+python tools/build_skin.py --install --skin=minecraft-end --pet=mc-bee
+python tools/make_preview.py && python tools/record_gif.py   # 預覽頁與 docs/preview.gif（需要 Chrome 或 Edge）
 ```
 
-每個世界的 customCSS 約 30 KiB（上限 32 KiB，超過會直接報錯）。極簡「Voxel Lantern」版保留在 git tag `voxel-lantern`。
+| 檔案 | 用途 |
+|---|---|
+| `src/skin.base.yaml` | 配色、終端機提示文字、品牌文字 |
+| `src/desktop.css` | 桌面版樣式與動畫（`{{...}}` 由 build 依世界填入） |
+| `tools/voxel.py` | 5 種空島與渲染器 |
+| `tools/make_icons.py` | 思考中圖示 |
+| `tools/pixels.py` | 草地、泥土等材質 |
 
-## 📄 License
+Hermes 對主題內嵌 CSS 有 32 KiB 上限，目前每個世界約 30 KiB；超過時 `build_skin.py` 會直接報錯。另一版極簡風格「Voxel Lantern」保留在 git tag `voxel-lantern`。
 
-程式碼 MIT。Zpix 字型屬原作者與其授權（CDN 連結載入，未隨附）。非官方粉絲作品，與 Mojang / Microsoft 無關；*Minecraft* 是 Mojang Synergies AB 的商標。
+## 授權
+
+- 程式碼與本專案自行繪製的圖像：MIT，見 [LICENSE](LICENSE)。
+- Zpix 字型：由原作者授權，**個人與教育用途免費，商業用途需另外購買授權**，詳見 [Zpix 專案](https://github.com/SolidZORO/zpix-pixel-font)。本專案只以 CDN 連結載入，不附帶字型檔。
+- 本專案為非官方粉絲作品，與 Mojang Studios、Microsoft 無關。Minecraft 是 Mojang Synergies AB 的商標。

@@ -267,5 +267,7 @@ if __name__ == "__main__":
     a = atlas()
     big = Image.new("RGBA", a.size, (24, 26, 32, 255))
     big.alpha_composite(a)
-    big.resize((a.width * 6, a.height * 6), Image.NEAREST).save("../docs/thinking-atlas.png")
-    print("ok", a.size)
+    from pathlib import Path
+    out = Path(__file__).resolve().parent.parent / "docs" / "thinking-atlas.png"
+    big.resize((a.width * 6, a.height * 6), Image.NEAREST).save(out)
+    print("wrote", out, "(local preview, not committed)")
