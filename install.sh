@@ -9,9 +9,9 @@ elif [ -n "${LOCALAPPDATA:-}" ] && [ -d "$LOCALAPPDATA/hermes" ]; then HOME_DIR=
 else HOME_DIR="$HOME/.hermes"; fi
 
 mkdir -p "$HOME_DIR/skins" "$HOME_DIR/pets/creeper-buddy"
-curl -fsSL "$REPO/skins/minecraft.yaml" -o "$HOME_DIR/skins/minecraft.yaml"
-curl -fsSL "$REPO/pets/creeper-buddy/pet.json" -o "$HOME_DIR/pets/creeper-buddy/pet.json"
-curl -fsSL "$REPO/pets/creeper-buddy/spritesheet.png" -o "$HOME_DIR/pets/creeper-buddy/spritesheet.png"
+curl -fsSL "$REPO/skins/minecraft.yaml" > "$HOME_DIR/skins/minecraft.yaml"
+curl -fsSL "$REPO/pets/creeper-buddy/pet.json" > "$HOME_DIR/pets/creeper-buddy/pet.json"
+curl -fsSL "$REPO/pets/creeper-buddy/spritesheet.png" > "$HOME_DIR/pets/creeper-buddy/spritesheet.png"
 
 if command -v hermes >/dev/null 2>&1; then
   hermes config set display.skin minecraft
