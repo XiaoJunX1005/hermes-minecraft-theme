@@ -1,9 +1,8 @@
 <div align="center">
 
-# ▣ Hermes · Voxel Lantern
+# ⛏ Hermes × Minecraft Theme
 
-**原創方塊像素風、會動的 [Hermes Agent](https://github.com/NousResearch/hermes-agent) 主題**
-An original, animated voxel-pixel skin for Hermes Agent — desktop app, TUI and CLI from one file.
+**Minecraft 風格、會動的 [Hermes Agent](https://github.com/NousResearch/hermes-agent) 主題（桌面版 / TUI / CLI）**
 
 ![preview](docs/preview.gif)
 
@@ -11,88 +10,84 @@ An original, animated voxel-pixel skin for Hermes Agent — desktop app, TUI and
 
 </div>
 
-## ✨ 特色 Features
+## ✨ 特色
 
-| | 效果 |
+| | 動畫 / 效果 |
 |---|---|
-| 🏝 **漂浮小島** | 新對話畫面中央有一座會慢慢旋轉、上下漂浮的體素小島（樹 + 發光燈籠），純 Python 光線投射算出的像素畫 |
-| ✨ **淡淡星空** | 只在畫面最上方有幾顆很淡的星星緩慢飄移，不會干擾閱讀 |
-| ▪▪▪ **思考中** | 三個小方塊輪流亮起 |
-| ━ **回覆中** | 輸入框上緣有一道銅綠→琥珀的細光掃過 |
-| 🧱 **方塊邊** | 底部狀態列頂端一條苔綠 / 銅綠的方塊細邊 |
-| 🎨 **夜色調色盤** | 深板岩底、暖白文字、銅綠主色、燈籠琥珀標題 |
-| 🏮 **Lantern Buddy 寵物** | 原創小燈籠：待機發光、跑步揚塵、工作時冒火花、揮手、跳躍、失敗時燈熄冒煙、等待打瞌睡、看卷軸 |
-| 💻 **CLI / TUI** | 琥珀→銅綠漸層 Logo、燈籠頭像、「lighting lanterns / stacking blocks…」 |
-
-內文、側欄、輸入框都維持介面原本的字型，中文與數字清楚好讀。所有圖都是程式產生的原創像素畫。
+| 🧱 **旋轉草方塊** | 新對話畫面中央的 3D 草方塊旋轉、漂浮；32×32 高細節紋理（柔和噪點、圓潤草緣、小石子），不是原版 16×16 |
+| 🌌 **夜空** | 上方有星星與緩慢飄動的方塊雲 |
+| 🟩 **經驗值條** | Hermes 回覆時輸入框下方跑 XP 條 |
+| ⛏ **挖礦中…** | 「思考中」換成迷你旋轉方塊 |
+| 💜 **附魔光澤** | 你的訊息泡泡有紫色附魔光掃過 |
+| 🌱 **草地狀態列** | 高細節草地條，文字加黑邊確保看得清楚 |
+| 🪨 **石頭按鈕** | 石材紋理 + 立體斜角，滑過變藍底黃字 |
+| 🔤 **像素字型（中英皆可）** | 4 款可選，見下方 |
+| 🐸 **Creeper Buddy** | 重新繪製的 Q 版苦力怕（4× 像素密度、柔和光影、眨眼、腮紅），9 種動畫狀態 |
+| 🏮 **Lantern Buddy** | 另一隻原創小燈籠寵物，可切換 |
 
 <div align="center">
 
-![lantern buddy](docs/pet-preview.gif)
+![creeper buddy](docs/pet-preview.gif)
 
-![island](docs/island.gif)
+![grass block](docs/grass-block.gif)
 
 </div>
 
-## 📦 安裝 Install
+## 🔤 字型選擇
 
-**Windows PowerShell**
+![fonts](docs/fonts.png)
+
+| 主題名稱 | 字型 | 特色 |
+|---|---|---|
+| `minecraft`（預設） | [Zpix 最像素](https://github.com/SolidZORO/zpix-pixel-font) | 中英數字全 12px 點陣，數字 5/S、0/O 最好分 |
+| `minecraft-cubic` | [俐方體 11 號 Cubic 11](https://github.com/ACh-K/Cubic-11) | 筆畫較細圓，可愛感最強 |
+| `minecraft-mixed` | Zpix（英數）+ 微軟正黑體（中文） | 英數像素、中文平滑，長文最好讀 |
+| `minecraft-pixelify` | [Pixelify Sans](https://fonts.google.com/specimen/Pixelify+Sans) + 正黑體 | 初版字型（5 容易看成 S） |
+
+切換：`hermes config set display.skin minecraft-cubic`（或在 Appearance 直接選），一秒內即時換。
+字型從 jsDelivr / Google Fonts 線上載入；離線時會自動回退成微軟正黑體。
+
+## 📦 安裝
 
 ```powershell
 irm https://raw.githubusercontent.com/XiaoJunX1005/hermes-minecraft-theme/main/install.ps1 | iex
 ```
 
-**macOS / Linux / WSL / Git Bash**
-
 ```bash
 curl -fsSL https://raw.githubusercontent.com/XiaoJunX1005/hermes-minecraft-theme/main/install.sh | bash
 ```
 
-**手動**
-
-1. 把 [`skins/minecraft.yaml`](skins/minecraft.yaml) 複製到 Hermes home 的 `skins/`
-   - Windows：`%LOCALAPPDATA%\hermes\skins\`
-   - macOS / Linux：`~/.hermes/skins/`
-2. （可選）把 [`pets/lantern-buddy/`](pets/lantern-buddy) 複製到 `pets/`
-3. 套用：
+手動：把 `skins/*.yaml` 複製到 Hermes home 的 `skins/`（Windows：`%LOCALAPPDATA%\hermes\skins\`），`pets/*` 複製到 `pets/`，然後：
 
 ```bash
 hermes config set display.skin minecraft
-hermes pets select lantern-buddy   # 可選
+hermes pets select creeper-buddy     # 或 lantern-buddy
 ```
-
-> 檔名保留 `minecraft` 是為了相容既有設定；視覺已改為原創的 Voxel Lantern 風格。
 
 **還原：** `hermes config set display.skin default`，寵物 `hermes pets off`。
 
-### 遠端連線（筆電透過 gateway 連桌電）
-
-主題裝在**主機（桌電）**的 Hermes home 就好，遠端連進來的桌面 App 也會套用（實測筆電遠端畫面有吃到主題 CSS）。
-
-## 🛠 開發 Development
-
-請改 `src/`，不要直接改 `skins/minecraft.yaml`：
+## 🛠 開發
 
 ```
-src/skin.base.yaml     調色盤、spinner、品牌文字、tool emoji
-src/desktop.css        桌面版 customCSS（動畫都在這裡）
-tools/pixels.py        共用調色盤
-tools/voxel.py         體素小島 + 光線投射渲染器
-tools/build_skin.py    → skins/minecraft.yaml + docs/island.gif
-tools/make_pet.py      → pets/lantern-buddy/ + docs/pet-preview.gif
-tools/make_preview.py  → docs/preview.html（瀏覽器直接開來看）
-tools/record_gif.py    → docs/preview.gif（需要 Chrome 或 Edge）
+src/skin.base.yaml      調色盤、spinner、品牌文字、tool emoji
+src/desktop.css         桌面版 customCSS（{{font_*}} 由 build 填入）
+tools/pixels.py         紋理（含 32×32 高細節草地 / 泥土）
+tools/build_skin.py     → skins/*.yaml（4 種字型）+ docs/grass-block.gif
+tools/make_creeper.py   → pets/creeper-buddy/ + docs/pet-preview.gif
+tools/make_lantern.py   → pets/lantern-buddy/ + docs/lantern-preview.gif
+tools/make_preview.py   → docs/preview.html；tools/record_gif.py → docs/preview.gif
+docs/fonts.html         字型對照頁
 ```
 
 ```bash
 pip install pillow
-python tools/make_pet.py
-python tools/build_skin.py --install   # 產生、安裝並立即套用
-python tools/make_preview.py && python tools/record_gif.py
+python tools/make_creeper.py
+python tools/build_skin.py --install            # 預設 minecraft
+python tools/build_skin.py --install --skin=minecraft-mixed
 ```
 
-`customCSS` 有 32 KiB 上限，`build_skin.py` 超過時會直接報錯；系統開啟「減少動態效果」時動畫會停止。
+另一版極簡「Voxel Lantern」風格保留在 git tag `voxel-lantern`。
 
 ## 📄 License
 
-MIT © 2026。非官方作品，與 Mojang / Microsoft 無關。
+程式碼 MIT。字型屬各自作者與授權（皆以 CDN 連結載入，未隨附）。非官方粉絲作品，與 Mojang / Microsoft 無關；*Minecraft* 是 Mojang Synergies AB 的商標。

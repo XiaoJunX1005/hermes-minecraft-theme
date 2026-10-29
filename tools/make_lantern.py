@@ -327,7 +327,7 @@ def main() -> None:
         strip.paste(gif[i], (0, gif[0].height * k))
     pal = strip.quantize(colors=128, method=Image.Quantize.MEDIANCUT)
     gif = [im.quantize(palette=pal, dither=Image.Dither.NONE) for im in gif]
-    gif[0].save(DOCS / "pet-preview.gif", save_all=True, append_images=gif[1:],
+    gif[0].save(DOCS / "lantern-preview.gif", save_all=True, append_images=gif[1:],
                 duration=1100 // FRAMES, loop=0)
     print("wrote", PET_DIR / "spritesheet.png", sheet.size)
 
