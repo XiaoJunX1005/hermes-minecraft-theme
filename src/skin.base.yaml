@@ -1,85 +1,80 @@
 # Base palette + CLI/TUI flavor. tools/build_skin.py adds banner_logo,
 # banner_hero and customCSS, then writes skins/minecraft.yaml.
 name: minecraft
-description: "Minecraft-style animated theme — night overworld, grass, stone & enchanted glints"
+description: "Voxel Lantern — original blocky pixel theme with a floating island, lantern pet & soft night palette"
 
 colors:
-  background: "#17191f"
-  ui_accent: "#7bd34a"
-  banner_accent: "#7bd34a"
-  banner_title: "#ffaa00"
-  banner_text: "#e8e8e8"
-  ui_text: "#e8e8e8"
-  ui_primary: "#ffaa00"
-  ui_label: "#e8e8e8"
-  banner_dim: "#a0a0a0"
-  banner_border: "#3a3d44"
-  ui_border: "#3a3d44"
-  ui_tool: "#55ffff"
-  ui_thinking: "#b18cff"
-  ui_ok: "#55ff55"
-  ui_warn: "#ffaa00"
-  ui_error: "#ff5555"
-  prompt: "#e8e8e8"
-  input_rule: "#7bd34a"
-  response_border: "#55ffff"
-  status_bar_bg: "#2b1d12"
-  status_bar_text: "#e8e8e8"
-  status_bar_strong: "#ffff55"
-  status_bar_dim: "#a08a72"
-  status_bar_good: "#55ff55"
-  status_bar_warn: "#ffaa00"
-  status_bar_bad: "#ff7a3d"
-  status_bar_critical: "#ff5555"
-  session_label: "#ffff55"
-  session_border: "#3a3d44"
-  syntax_string: "#55ff55"
-  syntax_number: "#ffaa00"
-  syntax_keyword: "#ff55ff"
-  syntax_comment: "#7f7f7f"
-  diff_added: "#55ff55"
-  diff_removed: "#ff5555"
-  completion_menu_bg: "#1f2228"
-  completion_menu_current_bg: "#3f7d23"
-  completion_menu_meta_bg: "#1a1c21"
-  completion_menu_meta_current_bg: "#2f5f1a"
+  background: "#15171c"
+  ui_accent: "#4fc3a8"
+  banner_accent: "#4fc3a8"
+  banner_title: "#f2b36b"
+  banner_text: "#ece6da"
+  ui_text: "#ece6da"
+  ui_primary: "#f2b36b"
+  ui_label: "#ece6da"
+  banner_dim: "#9a958c"
+  banner_border: "#2e323b"
+  ui_border: "#2e323b"
+  ui_tool: "#4fc3a8"
+  ui_thinking: "#a99bd6"
+  ui_ok: "#8fbf6a"
+  ui_warn: "#f2b36b"
+  ui_error: "#e46a6a"
+  prompt: "#ece6da"
+  input_rule: "#4fc3a8"
+  response_border: "#f2b36b"
+  status_bar_bg: "#111317"
+  status_bar_text: "#d8d2c6"
+  status_bar_strong: "#f2b36b"
+  status_bar_dim: "#8a857c"
+  status_bar_good: "#8fbf6a"
+  status_bar_warn: "#f2b36b"
+  status_bar_bad: "#e8935a"
+  status_bar_critical: "#e46a6a"
+  session_label: "#f2b36b"
+  session_border: "#2e323b"
+  syntax_string: "#8fbf6a"
+  syntax_number: "#f2b36b"
+  syntax_keyword: "#4fc3a8"
+  syntax_comment: "#7d7a74"
+  diff_added: "#8fbf6a"
+  diff_removed: "#e46a6a"
+  completion_menu_bg: "#1c1f25"
+  completion_menu_current_bg: "#245c50"
+  completion_menu_meta_bg: "#181a20"
+  completion_menu_meta_current_bg: "#1d4a40"
 
 spinner:
-  # block-breaking stages, like holding left-click on a block
-  waiting_faces: ["[░]", "[▒]", "[▓]", "[█]", "[▚]"]
-  thinking_faces: ["[⛏]", "[▣]", "[◆]", "[✦]"]
+  waiting_faces: ["[·  ]", "[·· ]", "[···]", "[ ··]", "[  ·]"]
+  thinking_faces: ["[▖]", "[▘]", "[▝]", "[▗]"]
   thinking_verbs:
-    - mining
-    - crafting
-    - smelting
-    - enchanting
-    - brewing potions
-    - placing blocks
-    - wiring redstone
-    - trading with villagers
-    - exploring caves
-    - punching trees
+    - lighting lanterns
+    - stacking blocks
+    - tending the moss
+    - carving stone
+    - mapping the island
+    - polishing copper
+    - planting saplings
+    - reading the stars
   wings:
     - ["⟦▪", "▪⟧"]
     - ["⟦▫", "▫⟧"]
-    - ["⟦◆", "◆⟧"]
-    - ["⟦◇", "◇⟧"]
 
 branding:
   agent_name: Hermes Agent
-  welcome: "⛏  Welcome back to the Overworld! 歡迎回到主世界"
-  goodbye: "💾 Saving world... 下次見！"
-  response_label: " ⛏ Hermes "
-  prompt_symbol: "▶"
-  help_header: "[▣] Crafting Table — Commands"
+  welcome: "🏮 燈已點亮，歡迎回來"
+  goodbye: "🏮 熄燈，下次見"
+  response_label: " ▣ Hermes "
+  prompt_symbol: "▸"
+  help_header: "[▣] Commands"
 
 tool_prefix: "┃"
 
 tool_emojis:
-  terminal: "⛏"
+  terminal: "⚒"
   web_search: "🧭"
   web_extract: "🗺"
-  read_file: "📖"
+  read_file: "📜"
   write_file: "🧱"
-  patch: "🔨"
+  patch: "🔧"
   search_files: "🔦"

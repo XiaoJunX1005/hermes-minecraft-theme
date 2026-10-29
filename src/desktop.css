@@ -1,310 +1,135 @@
 /* ==========================================================================
-   Hermes × Minecraft — desktop customCSS (source)
-   tools/build_skin.py inlines the {{png:*}} / {{svg:*}} assets, strips the
-   comments and embeds the result in skins/minecraft.yaml → customCSS.
-   Hard cap: 32 KiB after minification (the skin engine truncates beyond it).
+   Hermes · Voxel Lantern — desktop customCSS (source)
+   tools/build_skin.py inlines {{png:*}} / {{svg:*}} assets, strips comments and
+   embeds the result in skins/minecraft.yaml → customCSS (hard cap 32 KiB).
+   Design rules: body text keeps the app font, no global overrides, motion
+   lives at the edges (intro, loading, composer) — never behind reading text.
    ========================================================================== */
 
-@import url("https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap");
-
 :root {
-  --mc-font: "Pixelify Sans", "Microsoft JhengHei UI", "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", "Segoe UI", sans-serif;
-  --mc-grass: #7bd34a;
-  --mc-grass-dark: #3f7d23;
-  --mc-gold: #ffaa00;
-  --mc-aqua: #55ffff;
-  --mc-yellow: #ffff55;
-  --mc-enchant: #b18cff;
-  --mc-slot: #0f1014;
-  --mc-bevel-hi: rgba(255, 255, 255, 0.16);
-  --mc-bevel-lo: rgba(0, 0, 0, 0.55);
-  --mc-shadow: 2px 2px 0 rgba(0, 0, 0, 0.55);
-  --radius-scalar: 0 !important;
+  --vl-teal: #4fc3a8;
+  --vl-amber: #f2b36b;
+  --vl-moss: #8fbf6a;
+  --vl-ink: #ece6da;
 }
 
-/* ---------- blocky everything ------------------------------------------- */
-*, *::before, *::after { border-radius: 0 !important; }
+::selection { background: color-mix(in srgb, var(--vl-teal) 38%, transparent); color: #fff; }
 
-body,
-[data-slot="sidebar"],
-[data-slot="statusbar"],
-[data-slot="composer-root"],
-[data-slot="button"],
-[data-slot="row-button"],
-[data-slot="dropdown-menu-content"],
-[data-slot="dialog-content"],
-[data-slot="tooltip-content"],
-[data-slot="aui_intro"],
-[data-slot="aui_user-message-root"],
-[data-slot="aui_assistant-message-content"] :is(h1, h2, h3, h4, th) {
-  font-family: var(--mc-font);
-}
-
-::selection { background: #3f7d23; color: #fff; }
-
-/* ---------- the sky: twinkling stars + drifting pixel clouds ------------- */
+/* ---------- sky: a few faint stars, only at the very top, drifting slowly -- */
 [data-slot="aui_thread-viewport"] {
-  background-image: url("{{svg:clouds}}"), url("{{svg:clouds}}"), url("{{svg:stars}}");
-  background-repeat: repeat-x, repeat-x, repeat;
-  background-size: 640px 72px, 960px 108px, 420px 300px;
-  background-position: 0 18px, 200px 70px, 0 0;
-  animation: mc-sky 160s linear infinite;
+  background-image: url("{{svg:stars}}");
+  background-repeat: repeat-x;
+  background-size: 480px 220px;
+  background-position: 0 0;
+  animation: vl-drift 240s linear infinite;
 }
-@keyframes mc-sky {
-  from { background-position: 0 18px, 200px 70px, 0 0; }
-  to   { background-position: 640px 18px, -760px 70px, 0 0; }
-}
+@keyframes vl-drift { to { background-position: 480px 0; } }
 
-/* ---------- sidebar: deepslate ------------------------------------------- */
-[data-slot="sidebar"] {
-  background-image: url("{{png:noise}}");
-  background-size: 64px 64px;
-  image-rendering: pixelated;
-}
-[data-slot="sidebar"] [data-slot="row-button"],
-[data-slot="sidebar"] [data-sidebar="menu-button"] {
-  transition: none !important;
-}
-[data-slot="sidebar"] [data-slot="row-button"]:hover,
-[data-slot="sidebar"] [data-sidebar="menu-button"]:hover {
-  box-shadow: inset 2px 2px 0 var(--mc-bevel-hi), inset -2px -2px 0 var(--mc-bevel-lo);
-}
-[data-slot="sidebar"] [data-active="true"],
-[data-slot="sidebar"] [aria-current="page"] {
-  box-shadow: inset 3px 0 0 var(--mc-grass), inset 2px 2px 0 var(--mc-bevel-hi), inset -2px -2px 0 var(--mc-bevel-lo) !important;
-}
-
-/* ---------- status bar: a strip of grass the pet walks on ----------------- */
-[data-slot="statusbar"] {
-  background-color: #2b1d12 !important;
-  background-image: url("{{png:grass_strip}}") !important;
-  background-repeat: repeat-x !important;
-  background-size: 32px 100% !important;
-  image-rendering: pixelated;
-  border-top: 0 !important;
-  color: #f0f0f0;
-  text-shadow: var(--mc-shadow);
-}
-[data-slot="statusbar"] * { text-shadow: inherit; }
-
-/* ---------- buttons: stone, bevelled, hover goes Minecraft-blue ----------- */
-[data-slot="button"][data-variant="default"],
-[data-slot="button"][data-variant="secondary"],
-[data-slot="button"][data-variant="outline"] {
-  background-color: #6b6b6b !important;
-  background-image: url("{{png:stone}}") !important;
-  background-size: 48px 48px !important;
-  image-rendering: pixelated;
-  color: #f2f2f2 !important;
-  text-shadow: var(--mc-shadow);
-  border: 2px solid #111 !important;
-  box-shadow: inset 2px 2px 0 rgba(255, 255, 255, 0.35), inset -2px -3px 0 rgba(0, 0, 0, 0.45) !important;
-  transition: none !important;
-}
-[data-slot="button"][data-variant="default"]:hover:not(:disabled),
-[data-slot="button"][data-variant="secondary"]:hover:not(:disabled),
-[data-slot="button"][data-variant="outline"]:hover:not(:disabled) {
-  background-color: #7684c9 !important;
-  background-blend-mode: multiply;
-  color: var(--mc-yellow) !important;
-  border-color: #fff !important;
-}
-[data-slot="button"][data-variant="default"]:active:not(:disabled) {
-  box-shadow: inset -2px -2px 0 rgba(255, 255, 255, 0.25), inset 2px 3px 0 rgba(0, 0, 0, 0.5) !important;
-}
-[data-slot="button"]:disabled { filter: grayscale(1) brightness(0.7); }
-
-/* ---------- composer: the chat box ---------------------------------------- */
-[data-slot="composer-surface"] {
-  background: rgba(0, 0, 0, 0.55) !important;
-  border: 2px solid #3a3a3a !important;
-  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.6), 0 0 0 1px #000 !important;
-  position: relative;
-}
-[data-slot="composer-surface"]:focus-within {
-  border-color: #a0a0a0 !important;
-}
-[data-slot="composer-rich-input"] {
-  font-family: var(--mc-font);
-  caret-color: var(--mc-yellow);
-}
-
-/* XP bar under the composer while Hermes is streaming */
-body:has([data-message-streaming="true"]) [data-slot="composer-surface"]::after,
-body:has([data-slot="aui_response-loading"]) [data-slot="composer-surface"]::after {
-  content: "";
-  position: absolute;
-  left: 6px;
-  right: 6px;
-  bottom: -9px;
-  height: 5px;
-  pointer-events: none;
-  border: 1px solid #000;
-  background:
-    repeating-linear-gradient(90deg, transparent 0 calc(5.5% - 1px), rgba(0, 0, 0, 0.7) calc(5.5% - 1px) 5.5%),
-    linear-gradient(180deg, #c6ff6b, #80ff20 45%, #3c8f10),
-    #1c2a10;
-  background-size: 100% 100%, 0% 100%, 100% 100%;
-  background-repeat: no-repeat;
-  animation: mc-xp 2.4s steps(18) infinite;
-  box-shadow: 0 0 6px rgba(128, 255, 32, 0.45);
-}
-@keyframes mc-xp {
-  from { background-size: 100% 100%, 0% 100%, 100% 100%; }
-  to   { background-size: 100% 100%, 100% 100%, 100% 100%; }
-}
-
-/* ---------- empty chat: a spinning, floating grass block ------------------ */
+/* ---------- empty chat: a floating voxel island that slowly turns --------- */
 [data-slot="aui_intro"]::before {
   content: "";
   display: block;
-  width: 112px;
-  height: 112px;
-  margin: 0 auto 18px;
-  background-image: url("{{png:spin}}");
-  background-size: calc(112px * {{spin_frames}}) 112px;
+  width: 168px;
+  height: 168px;
+  margin: 0 auto 4px;
+  background-image: url("{{png:hero}}");
+  background-size: calc(168px * {{hero_frames}}) 168px;
   background-repeat: no-repeat;
   image-rendering: pixelated;
-  animation: mc-spin {{spin_duration}} steps({{spin_frames}}) infinite, mc-float 3.2s ease-in-out infinite;
-  filter: drop-shadow(0 14px 6px rgba(0, 0, 0, 0.45));
+  animation: vl-turn {{hero_duration}} steps({{hero_frames}}) infinite, vl-float 4s ease-in-out infinite;
+  filter: drop-shadow(0 16px 14px rgba(242, 179, 107, 0.16));
 }
-@keyframes mc-spin {
-  from { background-position: 0 0; }
-  to   { background-position: calc(-112px * {{spin_frames}}) 0; }
-}
-@keyframes mc-float {
-  0%, 100% { translate: 0 0; }
-  50%      { translate: 0 -10px; }
-}
-[data-slot="aui_intro"] p { text-shadow: var(--mc-shadow); }
+@keyframes vl-turn { to { background-position: calc(-168px * {{hero_frames}}) 0; } }
+@keyframes vl-float { 50% { translate: 0 -8px; } }
 
-/* splash text, like the title screen */
-[data-slot="aui_intro"]::after {
-  content: "Also try Minecraft!";
-  display: block;
-  margin-top: 14px;
-  color: var(--mc-yellow);
-  font-family: var(--mc-font);
-  font-size: 15px;
-  text-shadow: 2px 2px 0 #3f3f15;
-  rotate: -8deg;
-  animation: mc-splash 0.55s ease-in-out infinite alternate;
-}
-@keyframes mc-splash {
-  from { scale: 1; }
-  to   { scale: 1.09; }
-}
-
-/* ---------- "thinking…": a tiny block mining loop --------------------------- */
+/* ---------- thinking: three blocks lighting up in turn --------------------- */
 [data-slot="aui_response-loading"]::before {
   content: "";
   display: inline-block;
   flex: none;
-  width: 20px;
-  height: 20px;
-  margin-right: 8px;
+  width: 6px;
+  height: 6px;
+  margin: 0 24px 0 4px;
   vertical-align: middle;
-  background-image: url("{{png:spin}}");
-  background-size: calc(20px * {{spin_frames}}) 20px;
-  image-rendering: pixelated;
-  animation: mc-spin-sm {{spin_duration_fast}} steps({{spin_frames}}) infinite;
+  animation: vl-blocks 1.2s steps(1) infinite;
 }
-@keyframes mc-spin-sm {
-  from { background-position: 0 0; }
-  to   { background-position: calc(-20px * {{spin_frames}}) 0; }
+@keyframes vl-blocks {
+  0%   { background: var(--vl-amber); box-shadow: 9px 0 0 #f2b36b40, 18px 0 0 #f2b36b40; }
+  33%  { background: #f2b36b40; box-shadow: 9px 0 0 var(--vl-amber), 18px 0 0 #f2b36b40; }
+  66%  { background: #f2b36b40; box-shadow: 9px 0 0 #f2b36b40, 18px 0 0 var(--vl-amber); }
+}
+
+/* ---------- streaming: a thin stepped light runs along the composer ------- */
+[data-slot="composer-surface"] { position: relative; }
+body:has([data-message-streaming="true"]) [data-slot="composer-surface"]::after {
+  content: "";
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: -1px;
+  height: 2px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--vl-teal), var(--vl-amber), transparent) 0 0 / 40% 100% no-repeat;
+  animation: vl-scan 1.6s steps(24) infinite;
+}
+@keyframes vl-scan {
+  from { background-position: -70% 0; }
+  to   { background-position: 170% 0; }
+}
+
+/* ---------- status bar: a thin moss/copper block edge --------------------- */
+[data-slot="statusbar"] {
+  background-image: repeating-linear-gradient(90deg, #6d9d5a 0 8px, #4fc3a8 8px 16px, #5e8c4f 16px 24px, #3f8f7c 24px 32px) !important;
+  background-size: 100% 2px !important;
+  background-repeat: no-repeat !important;
+  background-position: top left !important;
+}
+
+/* ---------- sidebar: active session gets a teal marker ---------------------- */
+[data-slot="sidebar"] [data-sidebar="menu-button"][data-active="true"],
+[data-slot="sidebar"] [data-slot="row-button"][aria-current="page"] {
+  box-shadow: inset 2px 0 0 var(--vl-teal);
+}
+
+/* ---------- primary buttons: a subtle block bevel ------------------------- */
+[data-slot="button"][data-variant="default"] {
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+[data-slot="button"][data-variant="default"]:active:not(:disabled) {
+  box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.3);
+  translate: 0 1px;
 }
 
 /* ---------- messages ------------------------------------------------------- */
-/* user bubble: an enchanted item — purple glint sweeps across */
 [data-slot="aui_user-message-root"] .composer-human-message {
-  background-image: linear-gradient(110deg, transparent 35%, rgba(177, 140, 255, 0.22) 45%, rgba(220, 200, 255, 0.32) 50%, rgba(177, 140, 255, 0.22) 55%, transparent 65%);
-  background-size: 300% 100%;
-  animation: mc-glint 5s linear infinite;
-  border: 2px solid #000 !important;
-  box-shadow: inset 2px 2px 0 var(--mc-bevel-hi), inset -2px -2px 0 var(--mc-bevel-lo) !important;
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--vl-teal) 70%, transparent);
 }
-@keyframes mc-glint {
-  from { background-position: 150% 0; }
-  to   { background-position: -150% 0; }
-}
-
-[data-slot="aui_assistant-message-content"] :is(h1, h2, h3) {
-  color: var(--mc-gold);
-  text-shadow: 2px 2px 0 #3f2a00;
-  letter-spacing: 0.02em;
-}
-[data-slot="aui_assistant-message-content"] h4 { color: var(--mc-yellow); }
-[data-slot="aui_assistant-message-content"] a { color: var(--mc-aqua); text-decoration-style: dotted; }
-[data-slot="aui_assistant-message-content"] strong { color: #fff; }
+[data-slot="aui_assistant-message-content"] :is(h1, h2, h3) { color: var(--vl-amber); }
+[data-slot="aui_assistant-message-content"] h4 { color: var(--vl-teal); }
+[data-slot="aui_assistant-message-content"] a { color: var(--vl-teal); }
 [data-slot="aui_assistant-message-content"] :not(pre) > code {
-  background: rgba(0, 0, 0, 0.45);
-  border: 1px solid #000;
-  color: var(--mc-grass);
+  color: var(--vl-moss);
+  background: rgba(143, 191, 106, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(143, 191, 106, 0.18);
 }
 [data-slot="aui_assistant-message-content"] blockquote {
-  border-left: 4px solid var(--mc-enchant);
-  background: rgba(177, 140, 255, 0.07);
+  border-left-color: var(--vl-amber);
+  background: rgba(242, 179, 107, 0.05);
 }
 [data-slot="aui_assistant-message-content"] hr {
   border: 0;
-  height: 4px;
-  background: repeating-linear-gradient(90deg, #5a5a5a 0 8px, #3a3a3a 8px 16px);
+  height: 2px;
+  background: repeating-linear-gradient(90deg, #4fc3a855 0 6px, transparent 6px 12px);
 }
-[data-slot="aui_assistant-message-content"] table { border: 2px solid #000; }
-[data-slot="aui_assistant-message-content"] th { background: rgba(255, 255, 255, 0.06); color: var(--mc-gold); }
-
-/* ---------- inventory slots: tool calls, code, cards ---------------------- */
-[data-slot="tool-block"],
-[data-slot="code-card"],
-[data-slot="aui_thinking-disclosure"],
-[data-slot="connector-card"],
-[data-slot="file-diff-panel"] {
-  background-color: rgba(10, 11, 14, 0.55) !important;
-  border: 2px solid #000 !important;
-  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.6), inset -2px -2px 0 rgba(255, 255, 255, 0.08) !important;
+[data-slot="tool-block"] {
+  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--vl-teal) 50%, transparent);
 }
-[data-slot="tool-block"]:hover {
-  box-shadow: inset 0 0 0 999px rgba(255, 255, 255, 0.04), inset 2px 2px 0 rgba(0, 0, 0, 0.6), inset -2px -2px 0 rgba(255, 255, 255, 0.08) !important;
-}
-
-/* ---------- menus, dialogs, tooltips: GUI panels -------------------------- */
-[data-slot="dropdown-menu-content"],
-[data-slot="dropdown-menu-sub-content"],
-[data-slot="dialog-content"] {
-  border: 2px solid #000 !important;
-  box-shadow: inset 2px 2px 0 var(--mc-bevel-hi), inset -2px -2px 0 var(--mc-bevel-lo), 4px 4px 0 rgba(0, 0, 0, 0.45) !important;
-}
-[data-slot="tooltip-content"] {
-  background: #100010 !important;
-  color: #fff !important;
-  border: 2px solid #28007a !important;
-  box-shadow: 0 0 0 2px #100010 !important;
-  text-shadow: var(--mc-shadow);
-}
-[data-slot="dropdown-menu-item"]:hover,
-[data-slot="dropdown-menu-item"][data-highlighted] {
-  color: var(--mc-yellow) !important;
-}
-
-/* ---------- scrollbars: little stone pillars ------------------------------ */
-::-webkit-scrollbar { width: 12px; height: 12px; }
-::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.25); }
-::-webkit-scrollbar-thumb {
-  background-color: #6b6b6b;
-  background-image: url("{{png:stone}}");
-  background-size: 48px 48px;
-  border: 2px solid #111;
-  box-shadow: inset 2px 2px 0 rgba(255, 255, 255, 0.3), inset -2px -2px 0 rgba(0, 0, 0, 0.45);
-}
-::-webkit-scrollbar-thumb:hover { background-color: #8a8a8a; }
 
 /* ---------- respect reduced motion ---------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
   [data-slot="aui_thread-viewport"],
   [data-slot="aui_intro"]::before,
-  [data-slot="aui_intro"]::after,
   [data-slot="aui_response-loading"]::before,
-  [data-slot="aui_user-message-root"] .composer-human-message,
   [data-slot="composer-surface"]::after {
     animation: none !important;
   }

@@ -15,15 +15,15 @@ ROOT = Path(__file__).resolve().parent.parent
 
 def skin_css() -> str:
     text = (ROOT / "skins" / "minecraft.yaml").read_text(encoding="utf-8")
-    m = re.search(r"^customCSS: \|-\n((?:  .*\n?)+)", text, re.M)
+    m = re.search(r"^customCSS: \|2?-\n((?:  .*\n?)+)", text, re.M)
     return "\n".join(line[2:] for line in m.group(1).splitlines())
 
 
 HTML = """<!doctype html>
-<html class="dark"><head><meta charset="utf-8"><title>Hermes × Minecraft preview</title>
+<html class="dark"><head><meta charset="utf-8"><title>Hermes · Voxel Lantern preview</title>
 <style>
 :root{--dt-background:#17191f;--dt-foreground:#e8e8e8}
-html,body{margin:0;height:100%;background:#17191f;color:#e8e8e8;font-size:14px}
+html,body{margin:0;height:100%;background:#17191f;color:#e8e8e8;font-size:14px;font-family:"Segoe UI","Microsoft JhengHei UI",system-ui,sans-serif}
 .app{display:grid;grid-template-columns:230px 1fr;grid-template-rows:1fr 30px;height:100vh}
 [data-slot=sidebar]{background-color:#1b1d23;border-right:1px solid #3a3d44;padding:14px 10px;display:flex;flex-direction:column;gap:4px}
 [data-slot=sidebar] h6{margin:6px 8px;color:#7bd34a;font-size:11px;letter-spacing:.12em}
@@ -45,31 +45,31 @@ main{display:flex;flex-direction:column;min-width:0}
 <body><div class="app">
 <aside data-slot="sidebar">
   <h6>SESSIONS</h6>
-  <button data-slot="row-button" data-active="true">⛏ Minecraft theme</button>
-  <button data-slot="row-button">🧱 Build a redstone clock</button>
-  <button data-slot="row-button">📖 Enchanting guide</button>
+  <button data-slot="row-button" data-active="true">▣ Voxel Lantern theme</button>
+  <button data-slot="row-button">🧱 Plan a floating island</button>
+  <button data-slot="row-button">📖 Lantern notes</button>
   <div style="flex:1"></div>
-  <button data-slot="button" data-variant="default">+ New world</button>
+  <button data-slot="button" data-variant="default">+ New session</button>
 </aside>
 <main>
   <div data-slot="aui_thread-viewport">
     <div data-slot="aui_intro"><div class="wordmark">Hermes</div><p>What should we build today?</p></div>
-    <div data-slot="aui_user-message-root"><div class="composer-human-message">幫我做一個 Minecraft 主題</div></div>
+    <div data-slot="aui_user-message-root"><div class="composer-human-message">幫我做一個方塊像素主題</div></div>
     <div data-slot="aui_assistant-message-content">
       <h2>Crafting your theme</h2>
-      <p>Placing <strong>grass blocks</strong>, polishing <code>stone</code> buttons and adding an <a href="#">enchanted glint</a>.</p>
-      <div data-slot="tool-block">┃ ⛏ terminal  python tools/build_skin.py</div>
-      <div data-slot="aui_response-loading" data-message-streaming="true">mining…</div>
+      <p>Stacking <strong>voxels</strong>, polishing <code>copper</code> and lighting a <a href="#">lantern</a>.</p>
+      <div data-slot="tool-block">⚒ terminal  python tools/build_skin.py</div>
+      <div data-slot="aui_response-loading" data-message-streaming="true">thinking…</div>
     </div>
   </div>
   <div data-slot="composer-surface"><div data-slot="composer-rich-input">Send a message…</div></div>
 </main>
-<footer data-slot="statusbar"><span>● minecraft</span><span>claude-opus</span><span style="margin-left:auto">♥♥♥♥♥♥♥♥♥♡</span></footer>
+<footer data-slot="statusbar"><span>● voxel lantern</span><span>claude-opus</span><span style="margin-left:auto">v0.22</span></footer>
 </div>
 <script>
 /* preview.html#t=<ms> freezes every CSS animation at that time (used by record_gif.py) */
 (function(){var m=location.hash.match(/t=(\\d+)/);if(!m)return;var t=+m[1];
-function seek(){document.getAnimations().forEach(function(a){a.pause();a.currentTime=(a.animationName==='mc-sky'?20000+t:t);});}
+function seek(){document.getAnimations().forEach(function(a){a.pause();a.currentTime=(a.animationName==='vl-drift'?20000+t:t);});}
 document.fonts.ready.then(function(){seek();requestAnimationFrame(seek);});})();
 </script></body></html>
 """

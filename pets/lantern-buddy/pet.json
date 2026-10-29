@@ -1,0 +1,6 @@
+{
+  "id": "lantern-buddy",
+  "displayName": "Lantern Buddy",
+  "description": "A tiny copper lantern that hops, sparks and glows alongside Hermes.",
+  "spritesheetPath": "spritesheet.png"
+}

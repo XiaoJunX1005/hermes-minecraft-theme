@@ -1,6 +1,0 @@
-{
-  "id": "creeper-buddy",
-  "displayName": "Creeper Buddy",
-  "description": "A tiny pixel creeper that mines, hops and (almost) explodes alongside Hermes.",
-  "spritesheetPath": "spritesheet.png"
-}
