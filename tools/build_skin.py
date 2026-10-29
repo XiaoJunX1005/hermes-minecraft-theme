@@ -272,8 +272,27 @@ WORLDS = {
     "minecraft-cherry": dict(label="櫻花林", biome="cherry", accent="#ff9cc8", splash="Petals everywhere!",
                              star="#ffd6ea", cloud="#ffc0dc", glow="rgba(255, 150, 200, 0.32)", tint="rgba(255, 150, 200, 0.05)",
                              strip=(None, None, True)),
+    "minecraft-ocean": dict(label="深海", biome="ocean", accent="#3fd0c8", splash="Just keep swimming!",
+                            star="#9fe8ff", cloud="#6ab8d8", glow="rgba(80, 200, 220, 0.34)", tint="rgba(20, 70, 110, 0.14)",
+                            strip=(["#c9bc84", "#d2c48e", "#ddd09a", "#e8dca8", "#efe4b4", "#f6ecc2"],
+                                   ["#24504c", "#2e6560", "#357069", "#3d7f78", "#4f9a8e"], False)),
+    "minecraft-lush": dict(label="繁茂洞穴", biome="lush", accent="#7cd05a", splash="Glow berries!",
+                           star="#ffd08a", cloud="#9ad07a", glow="rgba(255, 170, 80, 0.30)", tint="rgba(60, 120, 60, 0.08)",
+                           strip=(["#3f7a2a", "#4f8a32", "#5f9d3a", "#6fae46", "#7cba4a", "#8ac85a"],
+                                  ["#5a606a", "#6a707a", "#7a808a", "#8a909a", "#9aa0aa"], False)),
+    "minecraft-desert": dict(label="沙漠", biome="desert", accent="#e8c070", splash="Mind the cactus.",
+                             star="#fff0c0", cloud="#f0d090", glow="rgba(255, 200, 110, 0.32)", tint="rgba(200, 160, 80, 0.08)",
+                             strip=(["#c8b070", "#d6c088", "#ddca8e", "#e8d8a0", "#f0e2b0", "#f6ecc4"],
+                                    ["#a88a5a", "#b89a68", "#c4a870", "#cbb27a", "#d8c088"], False)),
+    "minecraft-mushroom": dict(label="蘑菇島", biome="mushroom", accent="#d070a0", splash="Moo!",
+                               star="#f0d8ff", cloud="#c8a8d8", glow="rgba(220, 120, 180, 0.30)", tint="rgba(140, 90, 150, 0.08)",
+                               strip=(["#5e5070", "#6e6080", "#7a6a88", "#8a7a98", "#9a8aa8", "#aa9ab8"], None, False)),
+    "minecraft-deepdark": dict(label="深暗之域", biome="deepdark", accent="#2fd8e8", splash="Shhh... sneak.",
+                               star="#6ff0ff", cloud="#2a6a7a", glow="rgba(40, 220, 230, 0.30)", tint="rgba(10, 40, 60, 0.18)",
+                               strip=(["#081e24", "#0c2a34", "#0f3a44", "#12485a", "#1a5a6a", "#20d0e0"],
+                                      ["#14161b", "#1a1d23", "#20242b", "#262a32", "#2c3038"], False)),
 }
-OLD_SKINS = ["minecraft-cubic", "minecraft-mixed", "minecraft-pixelify", "minecraft-ocean"]
+OLD_SKINS = ["minecraft-cubic", "minecraft-mixed", "minecraft-pixelify"]
 
 
 def sheet_uri(frames: list[Image.Image], colors: int) -> str:

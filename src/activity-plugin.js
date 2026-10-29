@@ -202,14 +202,29 @@ const SPECIES = {
   bat:     { size: 32, speed: 90, turn: 4.5, wander: 3, pause: [0.2, 0.6], pauseChance: 0.15, bob: 2, fps: 16, turns: false, max: 3 },
   ghast:   { size: 48, speed: 22, turn: 0.6, wander: 0.3, pause: [1.5, 4], pauseChance: 0.6, bob: 3, fps: 5, turns: false, max: 1, calm: true },
   shulker: { size: 32, speed: 0, turn: 0, wander: 0, pause: [0, 0], pauseChance: 0, bob: 0, fps: 0, turns: false, max: 4, env: true },
-  blaze:   { size: 32, speed: 28, turn: 1.2, wander: 0.5, pause: [1.2, 3.5], pauseChance: 0.7, bob: 5, fps: 9, turns: false, max: 2, calm: true }
+  blaze:   { size: 32, speed: 28, turn: 1.2, wander: 0.5, pause: [1.2, 3.5], pauseChance: 0.7, bob: 5, fps: 9, turns: false, max: 2, calm: true },
+  cod:     { size: 32, speed: 40, turn: 1.8, wander: 0.8, pause: [0.6, 1.6], pauseChance: 0.3, bob: 1, fps: 10, turns: true, max: 3, mode: 'swim' },
+  salmon:  { size: 32, speed: 52, turn: 1.6, wander: 0.7, pause: [0.4, 1.2], pauseChance: 0.2, bob: 1, fps: 12, turns: true, max: 2, mode: 'swim' },
+  tropical:{ size: 32, speed: 34, turn: 2.6, wander: 1.2, pause: [0.5, 1.5], pauseChance: 0.45, bob: 1, fps: 12, turns: true, max: 4, mode: 'swim' },
+  squid:   { size: 32, speed: 20, turn: 0.8, wander: 0.4, pause: [1, 3], pauseChance: 0.5, bob: 4, fps: 6, turns: false, max: 1, mode: 'swim', calm: true },
+  glowsquid:{ size: 32, speed: 20, turn: 0.8, wander: 0.4, pause: [1, 3], pauseChance: 0.5, bob: 4, fps: 6, turns: false, max: 1, mode: 'swim', calm: true },
+  axolotl: { size: 32, speed: 22, turn: 0, wander: 0, pause: [1, 3], pauseChance: 0.6, bob: 0, fps: 8, turns: true, max: 2, mode: 'ground' },
+  rabbit:  { size: 32, speed: 55, turn: 0, wander: 0, pause: [0.6, 2], pauseChance: 0.7, bob: 0, fps: 10, turns: true, max: 3, mode: 'ground', hop: true },
+  camel:   { size: 48, speed: 18, turn: 0, wander: 0, pause: [2, 5], pauseChance: 0.5, bob: 0, fps: 5, turns: true, max: 1, mode: 'ground', calm: true },
+  mooshroom:{ size: 32, speed: 16, turn: 0, wander: 0, pause: [2, 5], pauseChance: 0.6, bob: 0, fps: 6, turns: true, max: 3, mode: 'ground', calm: true },
+  warden:  { size: 48, speed: 10, turn: 0, wander: 0, pause: [3, 7], pauseChance: 0.7, bob: 0, fps: 4, turns: false, max: 1, mode: 'ground', calm: true }
 }
 const POOLS = {
   overworld: { n: [2, 5], pick: [['bee', 5], ['bee-pollen', 3], ['bee-angry', 1], ['allay', 2], ['parrot-red', 1], ['parrot-blue', 1], ['parrot-green', 1]] },
   cherry: { n: [2, 5], pick: [['bee', 4], ['bee-pollen', 4], ['allay', 2], ['parrot-cyan', 1], ['parrot-gray', 1]] },
   snow: { n: [2, 4], pick: [['allay', 3], ['bat', 2], ['phantom', 1]] },
   nether: { n: [2, 4], pick: [['ghast', 1], ['blaze', 3]] },
-  end: { n: [2, 3], pick: [['phantom', 2], ['dragon', 1]] }
+  end: { n: [2, 3], pick: [['phantom', 2], ['dragon', 1]] },
+  ocean: { n: [3, 6], pick: [['cod', 4], ['salmon', 3], ['tropical-orange', 2], ['tropical-yellow', 2], ['tropical-blue', 2], ['squid', 1], ['glowsquid', 1]] },
+  lush: { n: [2, 4], pick: [['axolotl-pink', 3], ['axolotl-blue', 1], ['bat', 2]] },
+  desert: { n: [2, 4], pick: [['rabbit-gold', 3], ['rabbit-brown', 2], ['camel', 1]] },
+  mushroom: { n: [2, 3], pick: [['mooshroom-red', 4], ['mooshroom-brown', 1]] },
+  deepdark: { n: [1, 2], pick: [['warden', 1], ['bat', 2]] }
 }
 const TURN = 0.36
 const speciesOf = v => v.split('-')[0]
@@ -309,6 +324,10 @@ export class Critters {
       c.x = 48 + this.rand() * Math.max(1, this.w - 96)
       c.y = 48 + this.rand() * Math.max(1, this.h - 96)
     }
+    if (S.mode === 'ground') {
+      c.y = this.floorY(c)
+      if (fromEdge) c.x = this.rand() < 0.5 ? -30 : this.w + 30
+    }
     this.retarget(c)
     c.h = Math.atan2(c.ty - c.y, c.tx - c.x)
     c.face = c.nextFace = Math.cos(c.h) >= 0 ? 1 : -1
@@ -363,6 +382,7 @@ export class Critters {
       const e = d.indexOf(Math.min(...d))
       c.tx = e === 0 ? -120 : e === 1 ? this.w + 120 : c.x
       c.ty = e === 2 ? -120 : e === 3 ? this.h + 120 : c.y
+      if (SPECIES[c.sp].mode === 'ground') c.tx = c.x < this.w / 2 ? -120 : this.w + 120
     }
     this.churnAt = this.t + 40 + this.rand() * 70
   }
@@ -406,7 +426,9 @@ export class Critters {
       c.open = Math.max(0, c.open - dt * 6)
       c.alpha = Math.max(0, 1 - c.st / 0.35)
       if (c.st >= 0.35) {
-        const opts = ps.map((p, i) => ({ p, i })).filter(({ i }) => !used.has(i) && i !== c.perch)
+        const any = ps.map((p, i) => ({ p, i })).filter(({ i }) => !used.has(i) && i !== c.perch)
+        const other = any.filter(({ p }) => p.isl !== ps[c.perch].isl)
+        const opts = other.length ? other : any
         const far = opts.filter(({ p }) => Math.hypot(p.x - this.pointer.x, p.y - this.pointer.y) > 160)
         const pool = far.length ? far : opts
         if (pool.length) {
@@ -438,8 +460,13 @@ export class Critters {
 
   step(c, dt, boost) {
     const S = SPECIES[c.sp]
+    if (S.mode === 'ground') return this.stepGround(c, dt, boost)
     const flying = c.state === 'fly'
     let target = Math.atan2(c.ty - c.y, c.tx - c.x)
+    if (S.mode === 'swim') {
+      const dx = c.tx - c.x
+      target = Math.atan2(Math.max(-0.35 * Math.abs(dx), Math.min(0.35 * Math.abs(dx), c.ty - c.y)), dx)
+    }
     let want = S.speed * boost * (c.state === 'leave' ? 1.5 : 1)
     if (flying && c.wait > 0) {
       c.wait -= dt
@@ -483,7 +510,11 @@ export class Critters {
       c.state = 'fly'
     }
     c.idle = c.wait > 0 && c.spd < 6 ? c.idle + dt : 0
-    // turn animation with hysteresis: only after moving the other way for a moment
+    this.turnUpdate(c, dt, Math.cos(c.h) * c.spd)
+  }
+
+  turnUpdate(c, dt, vx) {
+    const S = SPECIES[c.sp]
     if (c.turnT >= 0) {
       c.turnT += dt
       if (c.turnT >= TURN) {
@@ -492,7 +523,6 @@ export class Critters {
         c.lastTurn = this.t
       }
     } else if (S.turns) {
-      const vx = Math.cos(c.h) * c.spd
       const dir = vx >= 0 ? 1 : -1
       if (dir !== c.face && Math.abs(vx) > 8) {
         c.flip += dt
@@ -505,6 +535,49 @@ export class Critters {
         c.flip = 0
       }
     }
+  }
+
+  /** Ground level: just above the status bar (the grass strip the pet walks on). */
+  floorY(c) {
+    const bar = document.querySelector('[data-slot="statusbar"]')
+    const top = bar ? bar.getBoundingClientRect().top : this.h
+    return Math.min(this.h, top) - SPECIES[c.sp].size / 2 + 2
+  }
+
+  /** Walkers stay on the floor: stroll to a spot, pause, maybe turn back; step aside from the cursor. */
+  stepGround(c, dt, boost) {
+    const S = SPECIES[c.sp]
+    c.y = this.floorY(c)
+    const flying = c.state === 'fly'
+    let want = S.speed * boost * (c.state === 'leave' ? 1.6 : 1)
+    if (flying && c.wait > 0) {
+      c.wait -= dt
+      want = 0
+    }
+    let dir = Math.sign(c.tx - c.x) || c.face
+    if (flying && Math.abs(c.x - this.pointer.x) < 90 && Math.abs(c.y - this.pointer.y) < 70) {
+      dir = c.x >= this.pointer.x ? 1 : -1
+      want = S.speed * (S.calm ? 1.4 : 2.4)
+      c.wait = 0
+      c.tx = Math.max(40, Math.min(this.w - 40, c.x + dir * 220))
+    }
+    if (c.turnT >= 0) want = 0
+    c.spd += (want - c.spd) * Math.min(1, dt * 3)
+    if (c.turnT < 0 && dir === c.face) c.x += dir * c.spd * dt
+    c.h = dir > 0 ? 0 : Math.PI
+    if (flying) {
+      if (Math.abs(c.tx - c.x) < 10) {
+        this.retarget(c)
+        if (this.rand() < S.pauseChance) c.wait = (S.pause[0] + this.rand() * (S.pause[1] - S.pause[0])) / boost
+      }
+      const r = S.size / 2
+      c.x = Math.min(this.w - r, Math.max(r, c.x))
+    } else if (c.state === 'enter' && c.x > 40 && c.x < this.w - 40) {
+      c.state = 'fly'
+    }
+    c.hopP = S.hop && c.spd > 5 ? (c.hopP || 0) + dt * 3.2 : 0
+    c.idle = c.wait > 0 && c.spd < 6 ? c.idle + dt : 0
+    this.turnUpdate(c, dt, dir * Math.max(c.spd, 10))
   }
 
   draw(now) {
@@ -553,7 +626,8 @@ export class Critters {
         }
         continue
       }
-      const bob = still ? 0 : Math.sin(this.t * 2.4 + c.phase) * S.bob - Math.sin(this.hop * Math.PI) * 16
+      const bob = still ? 0 : Math.sin(this.t * 2.4 + c.phase) * S.bob - Math.sin(this.hop * Math.PI) * 16 - (S.hop && c.hopP ? Math.abs(Math.sin(c.hopP * Math.PI)) * 7 : 0)
+      const hasFront = CRITTER_ROWS.includes(`${c.v}:front`)
       let view = 'front'
       let sx = 1
       let face = c.face
@@ -562,12 +636,15 @@ export class Critters {
         if (c.turnT >= 0) {
           const p = c.turnT / TURN
           if (p < 1 / 3) sx = 1 - p * 3 * 0.65
-          else if (p < 2 / 3) view = 'front'
+          else if (p < 2 / 3) {
+            if (hasFront) view = 'front'
+            else sx = 0.35
+          }
           else {
             face = c.nextFace
             sx = 0.35 + (p - 2 / 3) * 3 * 0.65
           }
-        } else if (c.idle > 0.8) {
+        } else if (c.idle > 0.8 && hasFront) {
           view = 'front'
         }
       }
@@ -616,7 +693,17 @@ const SCENES = {
     props: [['spruce', 5], ['igloo', 1]], p: 'snow', n: 70, pc: [235, 245, 255] },
   nether: { sky: 'rgba(220,70,30,0.2)', shape: 'pillars', lava: true, layers: [['rgba(120,40,50,0.18)', 0.22, 1], ['rgba(160,50,40,0.22)', 0.13, 2.5]],
     props: [['crimson', 2], ['warped', 2]], p: 'ember', n: 40, pc: [255, 175, 70] },
-  end: { sky: 'rgba(130,80,190,0.18)', end: true, layers: [], p: 'mote', n: 26, pc: [200, 150, 255] }
+  end: { sky: 'rgba(130,80,190,0.18)', end: true, layers: [], p: 'mote', n: 26, pc: [200, 150, 255] },
+  ocean: { sky: 'rgba(40,120,170,0.2)', shape: 'hills', rays: true, layers: [['rgba(60,110,130,0.18)', 0.12, 1], ['rgba(120,150,120,0.2)', 0.08, 2.5]],
+    props: [['kelp', 4], ['seagrass', 3], ['coral', 3]], p: 'bubble', n: 30, pc: [190, 235, 255] },
+  lush: { sky: 'rgba(90,150,80,0.14)', shape: 'hills', ceil: { color: 'rgba(80,110,90,0.2)', frac: 0.12, props: [['vine', 3], ['berryvine', 2]] },
+    layers: [['rgba(80,130,70,0.18)', 0.10, 1], ['rgba(110,160,80,0.22)', 0.07, 2.5]], props: [['azalea', 3], ['dripleaf', 2]], p: 'spore', n: 22, pc: [255, 190, 230] },
+  desert: { sky: 'rgba(230,180,100,0.18)', shape: 'hills', layers: [['rgba(200,160,100,0.18)', 0.14, 1], ['rgba(230,200,130,0.22)', 0.09, 2.5]],
+    props: [['cactus', 4], ['deadbush', 3], ['temple', 1]], p: 'sand', n: 34, pc: [255, 225, 160] },
+  mushroom: { sky: 'rgba(170,110,180,0.16)', shape: 'hills', layers: [['rgba(120,90,140,0.18)', 0.14, 1], ['rgba(150,120,170,0.22)', 0.09, 2.5]],
+    props: [['redshroom', 3], ['brownshroom', 2]], p: 'spore', n: 20, pc: [220, 200, 255] },
+  deepdark: { sky: 'rgba(20,90,110,0.16)', shape: 'hills', pulse: true, layers: [['rgba(40,80,100,0.16)', 0.18, 0.6], ['rgba(30,110,130,0.2)', 0.08, 1.5]],
+    props: [['sensor', 4], ['shrieker', 2], ['citywall', 1]], p: 'sculk', n: 22, pc: [90, 240, 250] }
 }
 
 export class Scene {
@@ -729,6 +816,25 @@ export class Scene {
         x += PROP_BOX[name][2] + 12 + this.rand() * 45
       }
     }
+    this.ceil = null
+    if (cfg.ceil) {
+      const C = { color: cfg.ceil.color, speed: front ? front.speed : 2, L, hts: this.heights('hills', L, LH * cfg.ceil.frac, 5), props: [] }
+      const total = cfg.ceil.props.reduce((a, [, w]) => a + w, 0)
+      let x = 6
+      while (x < L - 10) {
+        let r = this.rand() * total
+        let name = cfg.ceil.props[0][0]
+        for (const [n, w] of cfg.ceil.props) {
+          if ((r -= w) <= 0) {
+            name = n
+            break
+          }
+        }
+        C.props.push({ name, x: Math.round(x) })
+        x += PROP_BOX[name][2] + 6 + this.rand() * 30
+      }
+      this.ceil = C
+    }
     this.end = cfg.end ? this.buildEnd() : null
     this.parts = Array.from({ length: cfg.n }, () => this.particle(cfg.p, true))
   }
@@ -786,7 +892,8 @@ export class Scene {
     const out = []
     for (const isl of this.end.islands) {
       const b = this.bob(isl)
-      for (const dx of isl.perches) out.push({ x: this.rect.x + (isl.cx + dx) * PX, y: this.rect.y + (isl.top + b) * PX })
+      const k = this.end.islands.indexOf(isl)
+      for (const dx of isl.perches) out.push({ x: this.rect.x + (isl.cx + dx) * PX, y: this.rect.y + (isl.top + b) * PX, isl: k })
     }
     return out
   }
@@ -820,6 +927,24 @@ export class Scene {
       p.vx = (r() - 0.5) * 2
       p.life = anywhere ? r() : 1
       p.s = r() < 0.4 ? 2 : 1
+    } else if (type === 'bubble') {
+      p.y = anywhere ? r() * LH : LH
+      p.vy = -(4 + r() * 5)
+      p.s = r() < 0.3 ? 2 : 1
+    } else if (type === 'spore') {
+      p.vy = 0.6 + r() * 1.2
+      p.vx = (r() - 0.5) * 1.5
+      if (!anywhere) p.y = -1
+    } else if (type === 'sand') {
+      p.y = LH * (0.55 + r() * 0.45)
+      p.vx = -(10 + r() * 14)
+      p.vy = (r() - 0.5)
+      if (!anywhere) p.x = LW + 2
+    } else if (type === 'sculk') {
+      p.y = anywhere ? LH * (0.5 + r() * 0.5) : LH
+      p.vy = -(1 + r() * 2)
+      p.vx = (r() - 0.5) * 0.6
+      p.life = anywhere ? r() : 1
     } else {
       p.vy = -(0.6 + r() * 1.4)
       p.vx = (r() - 0.5) * 0.6
@@ -896,7 +1021,28 @@ export class Scene {
       g.fillStyle = lava
       g.fillRect(0, LH * 0.7, LW, LH * 0.3)
     }
+    if (cfg.rays) {
+      for (let k = 0; k < 4; k++) {
+        const x0 = ((k * 0.27 + this.t * 0.01) % 1) * (LW + LH * 0.5) - LH * 0.3
+        const a = 0.05 + 0.03 * Math.sin(this.t * 0.6 + k * 1.7)
+        g.fillStyle = `rgba(190,235,255,${a.toFixed(3)})`
+        for (let y = 0; y < LH * 0.8; y++) g.fillRect(Math.round(x0 + y * 0.35), y, 3 + (k % 2), 1)
+      }
+    }
     if (this.end) this.drawEnd(g)
+    if (this.ceil) {
+      const C = this.ceil
+      const off = Math.floor(this.t * C.speed) % C.L
+      g.fillStyle = C.color
+      for (let x = 0; x < LW; x++) g.fillRect(x, 0, 1, C.hts[(x + off) % C.L])
+      for (const pr of C.props) {
+        const [, , w] = PROP_BOX[pr.name]
+        let x = (pr.x - off + C.L) % C.L
+        if (x > C.L - w) x -= C.L
+        if (x > LW || x < -w) continue
+        this.prop(g, pr.name, x, C.hts[(pr.x + (w >> 1)) % C.L] - 1, 0.5)
+      }
+    }
     this.layers.forEach(layer => {
       const off = Math.floor(this.t * layer.speed) % layer.L
       g.fillStyle = layer.color
@@ -917,12 +1063,29 @@ export class Scene {
         this.prop(g, pr.name, x, LH - hh - h + 1, 0.5)
       }
     })
+    if (cfg.pulse && this.layers.length) {
+      const fl = this.layers[this.layers.length - 1]
+      const off = Math.floor(this.t * fl.speed) % fl.L
+      const ci = Math.floor(this.t / 5)
+      if (ci !== this.pulseI) {
+        this.pulseI = ci
+        this.pulseX = Math.round(this.rand() * LW)
+      }
+      const cyc = (this.t % 5) / 5
+      const rr = Math.round(cyc * LW * 0.35)
+      g.fillStyle = `rgba(70,230,245,${(0.45 * (1 - cyc)).toFixed(3)})`
+      for (const x of [this.pulseX - rr - 1, this.pulseX - rr, this.pulseX + rr, this.pulseX + rr + 1]) {
+        if (x < 0 || x >= LW) continue
+        g.fillRect(x, LH - fl.hts[(x + off) % fl.L] - 1, 1, 2)
+      }
+    }
     const [cr, cg, cb] = cfg.pc
     this.parts.forEach((p, i) => {
       if (!still) {
-        p.x += (p.vx + (cfg.p === 'petal' ? Math.sin(this.t * 1.5 + p.ph) * 2 : 0)) * dt
+        p.x += (p.vx + (cfg.p === 'petal' || cfg.p === 'bubble' ? Math.sin(this.t * 1.5 + p.ph) * 2 : 0)) * dt
         p.y += p.vy * dt
         if (cfg.p === 'ember') p.life -= dt * 0.25
+        if (cfg.p === 'sculk') p.life -= dt * 0.15
         if (cfg.p === 'firefly') {
           p.vx = Math.max(-3, Math.min(3, p.vx + (this.rand() - 0.5) * dt * 4))
           p.vy = Math.max(-2, Math.min(2, p.vy + (this.rand() - 0.5) * dt * 4))
@@ -931,8 +1094,9 @@ export class Scene {
         if (out) this.parts[i] = p.x < -4 && cfg.p !== 'firefly' ? Object.assign(this.particle(cfg.p, false), { x: LW + 2, y: this.rand() * LH }) : this.particle(cfg.p, false)
       }
       let a = 0.7
-      if (cfg.p === 'firefly' || cfg.p === 'mote') a = 0.25 + 0.6 * Math.max(0, Math.sin(this.t * 2 + p.ph))
+      if (cfg.p === 'firefly' || cfg.p === 'mote' || cfg.p === 'spore') a = 0.25 + 0.6 * Math.max(0, Math.sin(this.t * 2 + p.ph))
       if (cfg.p === 'ember') a = Math.max(0, p.life) * 0.95
+      if (cfg.p === 'sculk') a = Math.max(0, p.life) * 0.7
       g.fillStyle = `rgba(${cr},${cg},${cb},${a.toFixed(3)})`
       g.fillRect(Math.round(p.x), Math.round(p.y), p.s, p.s)
     })
@@ -965,7 +1129,8 @@ export class Scene {
 }
 
 // ---- world change: a pixel-block wipe, then the next world --------------------------------
-const WIPE_COLOR = { overworld: '#1d2a18', cherry: '#3a1f2c', snow: '#1c2433', nether: '#2a0e0c', end: '#160f22' }
+const WIPE_COLOR = { overworld: '#1d2a18', cherry: '#3a1f2c', snow: '#1c2433', nether: '#2a0e0c', end: '#160f22',
+  ocean: '#0e2a3a', lush: '#1a2e1a', desert: '#3a2e18', mushroom: '#2a1e2e', deepdark: '#071418' }
 
 export class Wipe {
   constructor() {

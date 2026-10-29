@@ -4,7 +4,7 @@
 # Optional: HMT_SKIN=minecraft-end HMT_PET=mc-bee  (otherwise your current choice is kept)
 set -euo pipefail
 REPO="${HMT_REPO:-https://raw.githubusercontent.com/XiaoJunX1005/hermes-minecraft-theme/main}"
-SKINS="minecraft minecraft-nether minecraft-end minecraft-snow minecraft-cherry"
+SKINS="minecraft minecraft-nether minecraft-end minecraft-snow minecraft-cherry minecraft-ocean minecraft-lush minecraft-desert minecraft-mushroom minecraft-deepdark"
 PLUGINS="minecraft-activity"
 PETS="creeper-blocky creeper-carved creeper-tall creeper-buddy lantern-buddy mc-pig mc-chicken mc-slime mc-bee mc-enderman"
 
@@ -37,7 +37,7 @@ for p in $PETS; do
   mkdir -p "$HOME_DIR/pets/$p"
   cp "$TMP/pets/$p/pet.json" "$TMP/pets/$p/spritesheet.png" "$HOME_DIR/pets/$p/"
 done
-rm -rf "$HOME_DIR/desktop-plugins/minecraft-ocean" "$HOME_DIR/skins/minecraft-ocean.yaml"
+rm -rf "$HOME_DIR/desktop-plugins/minecraft-ocean"
 for g in $PLUGINS; do
   mkdir -p "$HOME_DIR/desktop-plugins/$g"
   cp "$TMP/plugins/$g/plugin.js" "$HOME_DIR/desktop-plugins/$g/plugin.js"

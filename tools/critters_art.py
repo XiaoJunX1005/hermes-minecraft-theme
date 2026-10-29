@@ -302,6 +302,141 @@ def shulker_front(f):
     return g.im
 
 
+def fish_side(f, body, belly, fin, L=11, H=5, stripes=()):
+    g = G()
+    wag = [0, 1, 1, 0, 0, -1, -1, 0][f]
+    x0 = 3
+    for x in range(L):
+        t = x / (L - 1)
+        hh = max(2, round(H * (1 - abs(t - 0.6) * 1.1)))
+        top = 8 - hh // 2
+        for y in range(hh):
+            g.p(x0 + x, top + y, belly if y >= hh - max(1, hh // 3) else body)
+    for sx in stripes:
+        for y in range(4, 13):
+            if g.im.getpixel((x0 + sx, y))[3]:
+                g.p(x0 + sx, y, (245, 245, 245, 255))
+    for k in range(1, 4):
+        g.p(x0 - k, 8 - k + wag, fin)
+        g.p(x0 - k, 8 + k - 1 + wag, fin)
+    g.p(x0 - 1, 8 + wag, fin)
+    g.rect(x0 + L // 2 - 1, 8 - H // 2 - 1, 3, 1, fin)
+    g.p(x0 + L - 3, 7, (20, 20, 24, 255))
+    g.outline()
+    return g.im
+
+
+def axolotl_side(f, body, gill):
+    g = G()
+    wag = [0, 1, 0, -1, 0, 1, 0, -1][f]
+    g.rect(0, 9 + wag, 3, 2, body)
+    g.rect(3, 8, 9, 4, body)
+    g.rect(11, 7, 4, 4, body)
+    g.p(13, 8, (20, 20, 24, 255))
+    for x, y in ((11, 6), (12, 5), (14, 6), (15, 5), (10, 7)):
+        g.p(x, y, gill)
+    up = f % 4 < 2
+    g.rect(4, 12, 1, 2 if up else 1, body)
+    g.rect(9, 12, 1, 1 if up else 2, body)
+    g.outline()
+    return g.im
+
+
+def rabbit_side(f, fur):
+    g = G()
+    g.rect(4, 8, 8, 5, fur)
+    g.rect(10, 5, 5, 5, fur)
+    g.rect(11, 1, 1, 4, fur)
+    g.rect(13, 1, 1, 4, fur)
+    g.p(13, 7, (20, 20, 24, 255))
+    g.p(14, 8, (230, 150, 150, 255))
+    g.rect(2, 9, 2, 2, (245, 245, 245, 255))
+    leg = [0, 1, 1, 0, 0, 1, 1, 0][f]
+    g.rect(5, 13, 3, 1 + leg, fur)
+    g.rect(10, 13, 2, 2 - leg, fur)
+    g.outline()
+    return g.im
+
+
+def camel_side(f):
+    g = G()
+    tan, dk = (214, 172, 112, 255), (176, 138, 86, 255)
+    step = f % 4 < 2
+    for i, x in enumerate((4, 6, 10, 12)):
+        g.rect(x, 11, 1, 4 if (i % 2 == 0) == step else 3, dk)
+    g.rect(3, 7, 10, 4, tan)
+    g.rect(5, 5, 2, 2, tan)
+    g.rect(9, 5, 2, 2, tan)
+    g.rect(12, 4, 2, 4, tan)
+    g.rect(13, 2, 3, 2, tan)
+    g.p(14, 2, (20, 20, 24, 255))
+    g.p(2, 8, dk)
+    g.outline()
+    return g.im
+
+
+def mooshroom_side(f, body, spot, mush):
+    g = G()
+    step = f % 4 < 2
+    for i, x in enumerate((4, 6, 10, 12)):
+        g.rect(x, 12, 1, 3 if (i % 2 == 0) == step else 2, (60, 50, 50, 255))
+    g.rect(3, 7, 10, 5, body)
+    for x, y in ((5, 8), (8, 10), (10, 8)):
+        g.rect(x, y, 2, 1, spot)
+    g.rect(12, 6, 4, 4, body)
+    g.rect(14, 8, 2, 2, (230, 200, 190, 255))
+    g.p(13, 7, (20, 20, 24, 255))
+    for x in (5, 9):
+        g.p(x, 6, (230, 225, 210, 255))
+        g.rect(x - 1, 5, 3, 1, mush)
+    g.outline()
+    return g.im
+
+
+def squid_front(f, glow=False):
+    g = G()
+    body = (40, 160, 160, 255) if glow else (44, 62, 120, 255)
+    g.rect(5, 1, 6, 8, body)
+    g.rect(5, 1, 6, 1, (90, 220, 210, 255) if glow else (80, 100, 160, 255))
+    g.p(6, 5, (230, 230, 240, 255))
+    g.p(9, 5, (230, 230, 240, 255))
+    for k, x in enumerate((5, 6, 7, 8, 9, 10)):
+        n = 4 + (f + k) % 3
+        for r in range(n):
+            g.p(x + round(math.sin(f / 8 * 6.28 + k) * r / 4), 9 + r, body)
+    if glow and f % 4 < 2:
+        for x, y in ((7, 3), (9, 7), (6, 7)):
+            g.p(x, y, (190, 255, 240, 255))
+    g.outline()
+    return g.im
+
+
+def warden_front(f):
+    g = G()
+    g.rect(4, 4, 8, 10, (20, 42, 52, 255))
+    g.rect(4, 1, 8, 4, (24, 54, 64, 255))
+    g.p(3, 0, (60, 200, 210, 255))
+    g.p(12, 0, (60, 200, 210, 255))
+    glow = (40, 230, 240, 255) if f % 8 < 4 else (24, 150, 160, 255)
+    g.rect(6, 7, 4, 3, glow)
+    for y in (11, 12):
+        g.p(5, y, (40, 90, 100, 255))
+        g.p(10, y, (40, 90, 100, 255))
+    step = f % 4 < 2
+    g.rect(5, 14, 2, 2 if step else 1, (20, 42, 52, 255))
+    g.rect(9, 14, 2, 1 if step else 2, (20, 42, 52, 255))
+    g.outline((50, 110, 120, 255))
+    return g.im
+
+
+FISH = {
+    "cod": ((176, 150, 110, 255), (214, 196, 160, 255), (140, 110, 80, 255), 11, 5, ()),
+    "salmon": ((200, 80, 72, 255), (230, 150, 130, 255), (150, 60, 60, 255), 13, 6, ()),
+    "tropical-orange": ((240, 120, 30, 255), (250, 160, 80, 255), (240, 240, 240, 255), 9, 6, (3, 7)),
+    "tropical-yellow": ((240, 210, 50, 255), (250, 230, 120, 255), (60, 90, 200, 255), 9, 6, ()),
+    "tropical-blue": ((60, 110, 220, 255), (110, 160, 240, 255), (250, 210, 60, 255), 9, 6, (5,)),
+}
+
 SPRITES = {
     "bee": (lambda f: bee_side(f), lambda f: bee_front(f)),
     "bee-angry": (lambda f: bee_side(f, angry=True), lambda f: bee_front(f, angry=True)),
@@ -314,6 +449,17 @@ SPRITES = {
     "ghast": (None, ghast_front),
     "blaze": (None, blaze_front),
     "shulker": (None, shulker_front),
+    **{k: ((lambda f, a=a: fish_side(f, *a)), None) for k, a in FISH.items()},
+    "squid": (None, lambda f: squid_front(f)),
+    "glowsquid": (None, lambda f: squid_front(f, True)),
+    "axolotl-pink": (lambda f: axolotl_side(f, (240, 160, 190, 255), (220, 90, 140, 255)), None),
+    "axolotl-blue": (lambda f: axolotl_side(f, (110, 140, 230, 255), (60, 80, 190, 255)), None),
+    "rabbit-brown": (lambda f: rabbit_side(f, (140, 100, 70, 255)), None),
+    "rabbit-gold": (lambda f: rabbit_side(f, (220, 190, 110, 255)), None),
+    "camel": (camel_side, None),
+    "mooshroom-red": (lambda f: mooshroom_side(f, (200, 50, 40, 255), (240, 240, 235, 255), (210, 40, 40, 255)), None),
+    "mooshroom-brown": (lambda f: mooshroom_side(f, (150, 100, 60, 255), (220, 200, 170, 255), (150, 110, 70, 255)), None),
+    "warden": (None, warden_front),
 }
 ROWS = [f"{v}:{view}" for v, (side, front) in SPRITES.items()
         for view, fn in (("side", side), ("front", front)) if fn]

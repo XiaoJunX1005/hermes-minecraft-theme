@@ -4,7 +4,7 @@
 & {
 $ErrorActionPreference = 'Stop'
 $repo = if ($env:HMT_REPO) { $env:HMT_REPO } else { 'https://raw.githubusercontent.com/XiaoJunX1005/hermes-minecraft-theme/main' }
-$skins = 'minecraft','minecraft-nether','minecraft-end','minecraft-snow','minecraft-cherry'
+$skins = 'minecraft','minecraft-nether','minecraft-end','minecraft-snow','minecraft-cherry','minecraft-ocean','minecraft-lush','minecraft-desert','minecraft-mushroom','minecraft-deepdark'
 $plugins = 'minecraft-activity'
 $pets = 'creeper-blocky','creeper-carved','creeper-tall','creeper-buddy','lantern-buddy','mc-pig','mc-chicken','mc-slime','mc-bee','mc-enderman'
 $hhome = if ($env:HERMES_HOME) { $env:HERMES_HOME }
@@ -30,7 +30,7 @@ try {
         New-Item -ItemType Directory -Force "$hhome\pets\$p" | Out-Null
         foreach ($f in 'pet.json', 'spritesheet.png') { Copy-Item "$tmp\pets\$p\$f" "$hhome\pets\$p\$f" -Force }
     }
-    Remove-Item "$hhome\desktop-plugins\minecraft-ocean", "$hhome\skins\minecraft-ocean.yaml" -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item "$hhome\desktop-plugins\minecraft-ocean" -Recurse -Force -ErrorAction SilentlyContinue
     foreach ($g in $plugins) {
         New-Item -ItemType Directory -Force "$hhome\desktop-plugins\$g" | Out-Null
         Copy-Item "$tmp\plugins\$g\plugin.js" "$hhome\desktop-plugins\$g\plugin.js" -Force

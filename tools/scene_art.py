@@ -7,6 +7,7 @@ nether fungi, End city, chorus, crystals, exit portal). Original pixel art.
 
 from __future__ import annotations
 
+import math
 import random
 
 from PIL import Image
@@ -181,9 +182,161 @@ def portal() -> Spr:
     return s
 
 
+def kelp() -> Spr:
+    s = Spr(6, 30)
+    for y in range(30):
+        x = 2 + round(math.sin(y / 4) * 1.5)
+        s.rect(x, y, 2, 1, (70, 150, 80, 255))
+        if y % 5 == 0:
+            s.p(x + 2, y, (110, 190, 100, 255))
+            s.p(x - 1, y + 1, (110, 190, 100, 255))
+    return s
+
+
+def seagrass() -> Spr:
+    s = Spr(10, 9)
+    for x, h in ((1, 6), (3, 9), (5, 7), (7, 9), (9, 5)):
+        s.rect(x, 9 - h, 1, h, (90, 170, 90, 255))
+    return s
+
+
+def coral() -> Spr:
+    s = Spr(16, 12)
+    for x0, c in ((1, (240, 90, 120, 255)), (6, (250, 200, 70, 255)), (11, (120, 140, 250, 255))):
+        s.rect(x0 + 1, 6, 2, 6, c)
+        s.rect(x0, 3, 1, 4, c)
+        s.rect(x0 + 3, 2, 1, 5, c)
+        s.p(x0 + 1, 1, c)
+    return s
+
+
+def azalea() -> Spr:
+    s = Spr(18, 14)
+    s.blob(9, 7, 8, 6, [(130, 190, 80, 255), (96, 150, 60, 255), (70, 115, 46, 255)], 7)
+    for x, y in ((4, 4), (9, 3), (13, 6), (6, 9), (12, 10)):
+        s.rect(x, y, 2, 2, (240, 140, 210, 255))
+    return s
+
+
+def dripleaf() -> Spr:
+    s = Spr(14, 16)
+    s.rect(6, 5, 2, 11, (90, 150, 60, 255))
+    s.rect(0, 3, 14, 2, (120, 190, 80, 255))
+    s.rect(1, 2, 12, 1, (150, 210, 100, 255))
+    return s
+
+
+def vine() -> Spr:
+    s = Spr(5, 22)
+    for y in range(22):
+        s.p(2, y, (70, 130, 60, 255))
+        if y % 3 == 0:
+            s.p(1 if y % 6 else 3, y, (110, 180, 80, 255))
+    return s
+
+
+def berryvine() -> Spr:
+    s = vine()
+    for y in (5, 11, 17):
+        s.rect(1 if y % 2 else 2, y, 2, 2, (255, 170, 60, 255))
+    return s
+
+
+def cactus() -> Spr:
+    s = Spr(12, 24)
+    s.rect(4, 2, 4, 22, (80, 150, 60, 255))
+    s.rect(4, 2, 1, 22, (110, 180, 80, 255))
+    s.rect(0, 9, 4, 2, (80, 150, 60, 255))
+    s.rect(0, 5, 2, 4, (80, 150, 60, 255))
+    s.rect(8, 13, 3, 2, (80, 150, 60, 255))
+    s.rect(10, 9, 2, 4, (80, 150, 60, 255))
+    for y in range(4, 24, 4):
+        s.p(7, y, (40, 80, 30, 255))
+    return s
+
+
+def deadbush() -> Spr:
+    s = Spr(10, 8)
+    bc = (150, 110, 60, 255)
+    for x, y in ((5, 7), (5, 6), (4, 5), (3, 4), (2, 3), (6, 5), (7, 4), (8, 2), (4, 3), (6, 3), (6, 2)):
+        s.p(x, y, bc)
+    return s
+
+
+def temple() -> Spr:
+    s = Spr(34, 22)
+    ss, sd = (226, 206, 150, 255), (196, 172, 116, 255)
+    for k in range(8):
+        s.rect(5 + k, 22 - (k + 1) * 2, 24 - 2 * k, 2, ss if k % 2 else sd)
+    for x in (0, 28):
+        s.rect(x, 6, 6, 16, ss)
+        s.rect(x, 6, 6, 1, sd)
+        s.rect(x + 1, 3, 4, 3, sd)
+        s.rect(x + 2, 10, 2, 1, (210, 110, 50, 255))
+        s.rect(x + 2, 13, 2, 1, (70, 110, 200, 255))
+    s.rect(14, 15, 6, 7, (60, 44, 30, 255))
+    return s
+
+
+def redshroom() -> Spr:
+    s = Spr(22, 24)
+    s.rect(9, 10, 4, 14, (232, 226, 210, 255))
+    for y in range(11):
+        half = round(10 * math.sqrt(max(0.0, 1 - ((y - 10) / 10.5) ** 2)))
+        for x in range(11 - half, 11 + half):
+            s.p(x, y, (210, 50, 40, 255) if x < 14 else (176, 34, 30, 255))
+    for x, y in ((6, 4), (12, 2), (15, 6), (9, 7), (3, 8)):
+        s.rect(x, y, 2, 2, (245, 245, 240, 255))
+    return s
+
+
+def brownshroom() -> Spr:
+    s = Spr(26, 14)
+    s.rect(11, 5, 4, 9, (232, 226, 210, 255))
+    s.rect(0, 2, 26, 4, (170, 120, 80, 255))
+    s.rect(2, 1, 22, 1, (196, 146, 100, 255))
+    s.rect(0, 5, 26, 1, (130, 90, 60, 255))
+    return s
+
+
+def sensor() -> Spr:
+    s = Spr(8, 9)
+    s.rect(0, 4, 8, 5, (20, 70, 80, 255))
+    for x in (1, 3, 5, 7):
+        s.rect(x, 1 + (x % 3), 1, 4 - (x % 3), (60, 230, 240, 255))
+    return s
+
+
+def shrieker() -> Spr:
+    s = Spr(12, 10)
+    s.rect(0, 5, 12, 5, (20, 70, 80, 255))
+    s.rect(1, 1, 10, 4, (226, 220, 196, 255))
+    s.rect(3, 2, 6, 2, (40, 40, 44, 255))
+    return s
+
+
+def citywall() -> Spr:
+    s = Spr(40, 28)
+    ds, dl = (70, 80, 96, 255), (100, 112, 130, 255)
+    s.rect(0, 6, 40, 22, ds)
+    s.rect(0, 6, 40, 1, dl)
+    for x0 in (4, 17, 30):
+        for y in range(12, 28):
+            for x in range(x0, x0 + 7):
+                if y > 15 or (x - x0 - 3) ** 2 + (y - 15) ** 2 <= 10:
+                    s.p(x, y, (0, 0, 0, 0))
+    for x in (2, 16, 29):
+        s.rect(x, 2, 3, 4, ds)
+    s.rect(18, 8, 4, 2, (60, 230, 240, 255))
+    return s
+
+
 PROPS = {"oak": oak, "birch": birch, "flowers": flowers, "cherry": cherry, "spruce": spruce, "igloo": igloo,
          "crimson": lambda: fungus(True), "warped": lambda: fungus(False), "chorus": chorus, "endcity": endcity,
-         "crystal": crystal, "portal": portal}
+         "crystal": crystal, "portal": portal,
+         "kelp": kelp, "seagrass": seagrass, "coral": coral, "azalea": azalea, "dripleaf": dripleaf, "vine": vine,
+         "berryvine": berryvine, "cactus": cactus, "deadbush": deadbush, "temple": temple, "redshroom": redshroom,
+         "brownshroom": brownshroom, "sensor": sensor, "shrieker": shrieker, "citywall": citywall}
 
 
 def atlas():

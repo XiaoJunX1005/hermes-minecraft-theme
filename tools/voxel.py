@@ -35,6 +35,18 @@ PAL = {
     "cherry": dict(top=["#8fbf6a", "#7fb069", "#9ac874", "#6d9d5a"], mid=["#8a6a4f", "#7a5c43", "#6b5039"],
                    low=["#6f7480", "#626772", "#565a64"], core=["#565a64", "#4a4e57"]),
 }
+PAL.update({
+    "ocean": dict(top=["#e8dca8", "#ddd09a", "#d2c48e", "#efe4b4"], mid=["#5fa89c", "#4f9a8e", "#6cb4a6"],
+                  low=["#3d7f78", "#357069", "#2e6560"], core=["#24504c", "#2e6560"]),
+    "lush": dict(top=["#6fae46", "#5f9d3a", "#7cba4a", "#4f8a32"], mid=["#9aa4b0", "#8a94a0", "#a8b0bc"],
+                 low=["#6f7480", "#626772", "#565a64"], core=["#565a64", "#4a4e57"]),
+    "desert": dict(top=["#e8d8a0", "#ddca8e", "#f0e2b0", "#d6c088"], mid=["#d8c088", "#cbb27a", "#c4a870"],
+                   low=["#b89a68", "#a88a5a", "#9c7e50"], core=["#9c7e50", "#8a6e44"]),
+    "mushroom": dict(top=["#8a7a98", "#7a6a88", "#9a8aa8", "#6e6080"], mid=["#8a6a4f", "#7a5c43", "#6b5039"],
+                     low=["#6f7480", "#626772", "#565a64"], core=["#565a64", "#4a4e57"]),
+    "deepdark": dict(top=["#0f3a44", "#12303a", "#0c2a34", "#1a4a54"], mid=["#2a2e36", "#24282f", "#30343c"],
+                     low=["#1c1f25", "#22262d"], core=["#16181d", "#1c1f25"]),
+})
 BIOMES = list(PAL)
 
 
@@ -62,7 +74,7 @@ def _blob(vox: Vox, rng, cx, cz, ys, rad, colors, skip=()):
 
 
 def build_island(biome: str = "overworld") -> Vox:
-    rng = random.Random({"overworld": 4, "nether": 6, "end": 8, "snow": 10, "cherry": 12}[biome])
+    rng = random.Random({"overworld": 4, "nether": 6, "end": 8, "snow": 10, "cherry": 12, "ocean": 14, "lush": 16, "desert": 18, "mushroom": 20, "deepdark": 22}[biome])
     vox = _base(rng, PAL[biome])
 
     if biome == "overworld":
@@ -117,6 +129,63 @@ def build_island(biome: str = "overworld") -> Vox:
         vox[(8, 7, 7)] = ("#a8d8ff", False)  # ice block
         vox[(8, 8, 7)] = ("#cdeaff", False)
         vox[(6, 7, 8)] = ("#8ab8e8", True)  # soul-ish lantern
+
+    elif biome == "ocean":
+        for p in ((7, 6, 6), (8, 6, 6), (7, 6, 7), (8, 6, 7), (6, 6, 7)):
+            vox[p] = (rng.choice(["#2f7fd0", "#3a8ee0", "#2a70bc"]), False)
+        for x, z, h in ((3, 4, 5), (4, 3, 3), (2, 6, 4)):
+            for y in range(7, 7 + h):
+                vox[(x, y, z)] = (rng.choice(["#3f8a3a", "#4a9a42", "#357a31"]), False)
+        for p, c in (((9, 7, 4), "#f06a8a"), ((9, 8, 4), "#f58aa4"), ((5, 7, 9), "#f2c64a"), ((6, 7, 9), "#7a8cf0")):
+            vox[p] = (c, False)
+        vox[(9, 7, 8)] = ("#bfeef0", True)
+
+    elif biome == "lush":
+        for y in (7, 8):
+            vox[(4, y, 5)] = ("#6b4a35", False)
+        _blob(vox, rng, 4, 5, (9, 10), 1, ["#5f9d3a", "#4f8a32", "#6fae46"])
+        for p in ((3, 10, 4), (5, 9, 6), (4, 10, 6), (3, 9, 5)):
+            vox[p] = ("#e58fd0", False)
+        for p in ((8, 6, 7), (8, 6, 8), (9, 6, 7)):
+            vox[p] = ("#4c8fd6", False)
+        for y in (7, 8):
+            vox[(8, y, 4)] = ("#5f9d3a", False)
+        for p in ((7, 9, 4), (8, 9, 4), (9, 9, 4), (8, 9, 3)):
+            vox[p] = ("#7cba4a", False)
+        vox[(6, 6, 11)] = ("#4f8a32", False)
+        vox[(6, 5, 11)] = ("#4f8a32", False)
+        vox[(6, 4, 11)] = ("#ff9a3a", True)
+
+    elif biome == "desert":
+        for y in (7, 8, 9):
+            vox[(3, y, 4)] = ("#5f9d3a", False)
+        vox[(2, 8, 4)] = ("#5f9d3a", False)
+        vox[(2, 9, 4)] = ("#5f9d3a", False)
+        vox[(9, 7, 7)] = ("#8a6a3a", False)
+        for x in range(6, 9):
+            for z in (8, 9):
+                vox[(x, 7, z)] = ("#e0c98a", False)
+        vox[(7, 8, 8)] = ("#d07a3a", False)
+
+    elif biome == "mushroom":
+        for y in (7, 8, 9):
+            vox[(4, y, 5)] = ("#e8e0d0", False)
+        _blob(vox, rng, 4, 5, (10,), 2, ["#d03a30", "#c02a24", "#e04a40"])
+        _blob(vox, rng, 4, 5, (11,), 1, ["#d03a30"])
+        for p in ((3, 10, 3), (6, 10, 6), (2, 10, 5), (5, 11, 4)):
+            vox[p] = ("#f0f0f0", False)
+        vox[(9, 7, 8)] = ("#e8e0d0", False)
+        for p in ((9, 8, 8), (8, 8, 8), (10, 8, 8), (9, 8, 7), (9, 8, 9)):
+            vox[p] = ("#b07a4a", False)
+
+    elif biome == "deepdark":
+        vox[(6, 7, 6)] = ("#0f3a44", False)
+        vox[(6, 8, 6)] = ("#2fd8e8", True)
+        vox[(3, 7, 4)] = ("#d8d0b8", False)
+        vox[(3, 8, 4)] = ("#e8e0c8", False)
+        for y in (7, 8, 9, 10):
+            vox[(9, y, 8)] = ("#4a4f5a", False)
+        vox[(9, 11, 8)] = ("#2fd8e8", True)
 
     elif biome == "cherry":
         for y in (7, 8, 9):
@@ -175,7 +244,7 @@ def _cast(vox: Vox, o, d):
     return None
 
 
-OUTLINE = {"nether": (86, 40, 52, 255), "end": (92, 70, 120, 255)}
+OUTLINE = {"nether": (86, 40, 52, 255), "end": (92, 70, 120, 255), "deepdark": (40, 110, 120, 255)}
 
 
 def render(size: int, frames: int, biome: str = "overworld", pitch_deg: float = 30.0) -> list[Image.Image]:
