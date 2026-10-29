@@ -222,11 +222,23 @@ def dragon_front(f):
 
 
 def bat_front(f):
+    """Bat seen from the front: each wing is a membrane spread between three finger bones,
+    so the trailing edge is notched and never forms one straight horizontal line."""
     g = G()
-    body, wing = (110, 80, 58, 255), (70, 50, 38, 255)
-    tip = [1, 4, 8, 11, 8, 4, 1, 1][f]
-    tri(g, ((6, 6), (0, tip), (5, 10)), wing)
-    tri(g, ((9, 6), (15, tip), (10, 10)), wing)
+    body, wing, bone = (110, 80, 58, 255), (78, 56, 42, 255), (124, 92, 66, 255)
+    flap = [-40, -20, 5, 30, 5, -20, -40, -40][f]
+    for side in (-1, 1):
+        sx, sy = (6, 7) if side < 0 else (9, 7)
+        tips = []
+        for da, ln in ((-28, 7.0), (0, 7.5), (28, 5.5)):
+            a = math.radians(flap + da)
+            tips.append((round(sx + side * math.cos(a) * ln), round(sy + math.sin(a) * ln)))
+        tri(g, ((sx, sy), tips[0], tips[1]), wing)
+        tri(g, ((sx, sy), tips[1], tips[2]), wing)
+        for tx, ty in tips:
+            n = max(abs(tx - sx), abs(ty - sy))
+            for k in range(n + 1):
+                g.p(round(sx + (tx - sx) * k / n), round(sy + (ty - sy) * k / n), bone)
     g.rect(6, 5, 4, 6, body)
     g.p(6, 4, body)
     g.p(9, 4, body)
