@@ -282,6 +282,26 @@ def blaze_front(f):
     return g.im
 
 
+def shulker_front(f):
+    """Frame = how far the lid is open (0 closed .. 7 open)."""
+    g = G()
+    lift = round(f * 3 / 7)
+    pur, purd, purl = (170, 110, 185, 255), (130, 80, 150, 255), (205, 160, 215, 255)
+    g.rect(2, 9, 12, 6, pur)
+    g.rect(2, 9, 12, 1, purl)
+    g.rect(2, 14, 12, 1, purd)
+    if lift:
+        g.rect(4, 9 - lift, 8, lift, (236, 226, 170, 255))
+        if lift >= 2:
+            g.p(6, 9 - lift, (30, 30, 40, 255))
+            g.p(9, 9 - lift, (30, 30, 40, 255))
+    g.rect(2, 3 - lift, 12, 6, pur)
+    g.rect(2, 3 - lift, 12, 1, purl)
+    g.rect(2, 8 - lift, 12, 1, purd)
+    g.outline((90, 50, 110, 255))
+    return g.im
+
+
 SPRITES = {
     "bee": (lambda f: bee_side(f), lambda f: bee_front(f)),
     "bee-angry": (lambda f: bee_side(f, angry=True), lambda f: bee_front(f, angry=True)),
@@ -293,6 +313,7 @@ SPRITES = {
     "bat": (None, bat_front),
     "ghast": (None, ghast_front),
     "blaze": (None, blaze_front),
+    "shulker": (None, shulker_front),
 }
 ROWS = [f"{v}:{view}" for v, (side, front) in SPRITES.items()
         for view, fn in (("side", side), ("front", front)) if fn]

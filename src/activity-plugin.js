@@ -201,6 +201,7 @@ const SPECIES = {
   dragon:  { size: 48, speed: 70, turn: 0.8, wander: 0.35, pause: [0, 0], pauseChance: 0, bob: 2, fps: 6, turns: true, max: 1 },
   bat:     { size: 32, speed: 90, turn: 4.5, wander: 3, pause: [0.2, 0.6], pauseChance: 0.15, bob: 2, fps: 16, turns: false, max: 3 },
   ghast:   { size: 48, speed: 22, turn: 0.6, wander: 0.3, pause: [1.5, 4], pauseChance: 0.6, bob: 3, fps: 5, turns: false, max: 1, calm: true },
+  shulker: { size: 32, speed: 0, turn: 0, wander: 0, pause: [0, 0], pauseChance: 0, bob: 0, fps: 0, turns: false, max: 4, env: true },
   blaze:   { size: 32, speed: 28, turn: 1.2, wander: 0.5, pause: [1.2, 3.5], pauseChance: 0.7, bob: 5, fps: 9, turns: false, max: 2, calm: true }
 }
 const POOLS = {
@@ -314,7 +315,25 @@ export class Critters {
     return c
   }
 
-  spawn() {
+  spawn(forceMode) {
+    if (this.world === 'end') {
+      this.list = []
+      this.endMode = forceMode || (this.rand() < 0.5 ? 'main' : 'outer')
+      if (this.endMode === 'main') {
+        this.list.push(this.make('dragon', false))
+        if (this.rand() < 0.6) this.list.push(this.make('phantom', false))
+      } else {
+        if (this.rand() < 0.5) this.list.push(this.make('phantom', false))
+        const n = 2 + Math.floor(this.rand() * 3)
+        for (let i = 0; i < n; i++) {
+          this.list.push({ v: 'shulker', sp: 'shulker', x: -999, y: -999, perch: -1, state: 'sit', open: 0, target: 0,
+            openT: this.rand() * 3, near: 0, cool: 0, alpha: 1, st: 0, teleports: 0, phase: this.rand() * 6.28, face: 1, turnT: -1, idle: 0 })
+        }
+      }
+      this.churnAt = Infinity
+      return
+    }
+    this.endMode = ''
     const pool = POOLS[this.world] || POOLS.overworld
     const n = pool.n[0] + Math.floor(this.rand() * (pool.n[1] - pool.n[0] + 1))
     const counts = {}
@@ -346,6 +365,66 @@ export class Critters {
       c.ty = e === 2 ? -120 : e === 3 ? this.h + 120 : c.y
     }
     this.churnAt = this.t + 40 + this.rand() * 70
+  }
+
+  /** Shulkers sit on island perches, peek now and then, and teleport away if you hover near them. */
+  stepShulker(c, dt) {
+    const ps = this.perches ? this.perches() : []
+    if (!ps.length) {
+      c.x = -999
+      return
+    }
+    const used = new Set(this.list.filter(o => o !== c && o.sp === 'shulker').map(o => o.perch))
+    if (c.perch < 0 || c.perch >= ps.length) {
+      const free = ps.map((_, i) => i).filter(i => !used.has(i))
+      if (!free.length) {
+        c.x = -999
+        return
+      }
+      c.perch = free[Math.floor(this.rand() * free.length)]
+    }
+    c.cool = Math.max(0, c.cool - dt)
+    c.x = ps[c.perch].x
+    c.y = ps[c.perch].y
+    if (c.state === 'sit') {
+      c.openT -= dt
+      if (c.openT <= 0) {
+        c.target = c.target ? 0 : 1
+        c.openT = c.target ? 1.2 + this.rand() * 1.5 : 2.5 + this.rand() * 4
+      }
+      c.open += (c.target - c.open) * Math.min(1, dt * 4)
+      const d = Math.hypot(c.x - this.pointer.x, c.y - 14 - this.pointer.y)
+      c.near = d < 90 ? c.near + dt : 0
+      if (c.near > 0.35 && c.cool <= 0 && dt > 0) {
+        c.state = 'hide'
+        c.st = 0
+      }
+      return
+    }
+    c.st += dt
+    if (c.state === 'hide') {
+      c.open = Math.max(0, c.open - dt * 6)
+      c.alpha = Math.max(0, 1 - c.st / 0.35)
+      if (c.st >= 0.35) {
+        const opts = ps.map((p, i) => ({ p, i })).filter(({ i }) => !used.has(i) && i !== c.perch)
+        const far = opts.filter(({ p }) => Math.hypot(p.x - this.pointer.x, p.y - this.pointer.y) > 160)
+        const pool = far.length ? far : opts
+        if (pool.length) {
+          c.perch = pool[Math.floor(this.rand() * pool.length)].i
+          c.teleports++
+        }
+        c.state = 'show'
+        c.st = 0
+      }
+    } else if (c.state === 'show') {
+      c.alpha = Math.min(1, c.st / 0.35)
+      if (c.st >= 0.35) {
+        c.state = 'sit'
+        c.alpha = 1
+        c.near = 0
+        c.cool = 3 + this.rand() * 3
+      }
+    }
   }
 
   retarget(c) {
@@ -443,10 +522,13 @@ export class Critters {
     }
     this.hop = Math.max(0, this.hop - dt * 1.6)
     const still = this.reduced?.matches
+    for (const c of this.list) {
+      if (c.sp === 'shulker') this.stepShulker(c, still ? 0 : dt)
+      else if (!still) this.step(c, dt, boost)
+    }
     if (!still) {
-      for (const c of this.list) this.step(c, dt, boost)
       this.list = this.list.filter(c => !(c.state === 'leave' && (c.x < -60 || c.x > this.w + 60 || c.y < -60 || c.y > this.h + 60)))
-      if (this.t >= this.churnAt) this.churn()
+      if (this.t >= this.churnAt && this.world !== 'end') this.churn()
     }
     const { ctx } = this
     const dpr = this.canvas.width / Math.max(1, this.w)
@@ -456,6 +538,21 @@ export class Critters {
     ctx.imageSmoothingEnabled = false
     for (const c of this.list) {
       const S = SPECIES[c.sp]
+      if (c.sp === 'shulker') {
+        if (c.x < -500) continue
+        const row = CRITTER_ROWS.indexOf('shulker:front')
+        ctx.globalAlpha = c.alpha
+        ctx.drawImage(this.atlas, Math.round(c.open * 7) * 16, row * 16, 16, 16, Math.round(c.x - S.size / 2), Math.round(c.y - (S.size * 15) / 16), S.size, S.size)
+        ctx.globalAlpha = 1
+        if (c.state !== 'sit') {
+          ctx.fillStyle = 'rgba(200,130,255,0.85)'
+          for (let k = 0; k < 6; k++) {
+            const ang = k * 1.05 + this.t * 6
+            ctx.fillRect(Math.round(c.x + Math.cos(ang) * 18), Math.round(c.y - 14 + Math.sin(ang) * 12 - c.st * 20), 3, 3)
+          }
+        }
+        continue
+      }
       const bob = still ? 0 : Math.sin(this.t * 2.4 + c.phase) * S.bob - Math.sin(this.hop * Math.PI) * 16
       let view = 'front'
       let sx = 1
@@ -508,21 +605,24 @@ export class Critters {
 // ---- scene: a moving pixel background behind the chat, per world ----------------------
 // Drawn at 1/3 resolution and scaled up; screen-blended so it only lightens the dark page.
 const PX = 3
+const PROP_SHEET = '__PROP_SHEET__'
+const PROP_BOX = __PROP_BOX__
 const SCENES = {
-  overworld: { sky: 'rgba(70,140,90,0.16)', shape: 'hills', layers: [['rgba(60,110,80,0.16)', 0.16, 2], ['rgba(80,140,90,0.22)', 0.10, 5]],
-    p: 'firefly', n: 16, pc: [210, 255, 120] },
-  cherry: { sky: 'rgba(210,110,160,0.16)', shape: 'hills', trees: true, layers: [['rgba(150,80,120,0.16)', 0.16, 2], ['rgba(190,110,150,0.2)', 0.10, 5]],
-    p: 'petal', n: 26, pc: [255, 180, 215] },
-  snow: { sky: 'rgba(120,160,220,0.16)', shape: 'peaks', layers: [['rgba(110,130,180,0.16)', 0.22, 1.5], ['rgba(160,180,220,0.2)', 0.12, 4]],
-    p: 'snow', n: 70, pc: [235, 245, 255] },
-  nether: { sky: 'rgba(220,70,30,0.2)', shape: 'pillars', lava: true, layers: [['rgba(120,40,50,0.18)', 0.22, 1.5], ['rgba(160,50,40,0.22)', 0.13, 4]],
-    p: 'ember', n: 40, pc: [255, 175, 70] },
-  end: { sky: 'rgba(130,80,190,0.18)', shape: 'islands', layers: [], p: 'mote', n: 32, pc: [200, 150, 255] }
+  overworld: { sky: 'rgba(70,140,90,0.16)', shape: 'hills', layers: [['rgba(60,110,80,0.16)', 0.16, 1.2], ['rgba(80,140,90,0.22)', 0.10, 3]],
+    props: [['oak', 3], ['birch', 2], ['flowers', 2]], p: 'firefly', n: 16, pc: [210, 255, 120] },
+  cherry: { sky: 'rgba(210,110,160,0.16)', shape: 'hills', layers: [['rgba(150,80,120,0.16)', 0.16, 1.2], ['rgba(190,110,150,0.2)', 0.10, 3]],
+    props: [['cherry', 4], ['flowers', 1]], p: 'petal', n: 26, pc: [255, 180, 215] },
+  snow: { sky: 'rgba(120,160,220,0.16)', shape: 'peaks', layers: [['rgba(110,130,180,0.16)', 0.22, 1], ['rgba(160,180,220,0.2)', 0.12, 2.5]],
+    props: [['spruce', 5], ['igloo', 1]], p: 'snow', n: 70, pc: [235, 245, 255] },
+  nether: { sky: 'rgba(220,70,30,0.2)', shape: 'pillars', lava: true, layers: [['rgba(120,40,50,0.18)', 0.22, 1], ['rgba(160,50,40,0.22)', 0.13, 2.5]],
+    props: [['crimson', 2], ['warped', 2]], p: 'ember', n: 40, pc: [255, 175, 70] },
+  end: { sky: 'rgba(130,80,190,0.18)', end: true, layers: [], p: 'mote', n: 26, pc: [200, 150, 255] }
 }
 
 export class Scene {
-  constructor(seed = Date.now()) {
+  constructor(seed = Date.now(), getMode = () => 'main') {
     this.rand = mulberry(seed ^ 0x9e3779b9)
+    this.getMode = getMode
     this.canvas = document.createElement('canvas')
     this.canvas.id = 'hmt-scene'
     Object.assign(this.canvas.style, {
@@ -532,11 +632,14 @@ export class Scene {
     this.ctx = this.canvas.getContext('2d')
     this.low = document.createElement('canvas')
     this.lctx = this.low.getContext('2d')
+    this.sheet = new Image()
+    this.sheet.src = PROP_SHEET
     this.world = ''
+    this.mode = ''
     this.rect = { x: 0, y: 0, w: 0, h: 0 }
     this.layers = []
     this.parts = []
-    this.islands = []
+    this.end = null
     this.t = 0
     this.last = 0
     this.raf = 0
@@ -561,9 +664,11 @@ export class Scene {
       this.canvas.width = w
       this.canvas.height = h
     }
-    const world = worldOf()
-    if (resized || world !== this.world) {
-      this.world = SCENES[world] ? world : 'overworld'
+    const world = SCENES[worldOf()] ? worldOf() : 'overworld'
+    const mode = world === 'end' ? this.getMode() || 'main' : ''
+    if (resized || world !== this.world || mode !== this.mode) {
+      this.world = world
+      this.mode = mode
       this.build()
     }
     return true
@@ -593,7 +698,6 @@ export class Scene {
       }
       out[x] = Math.round((base * v) / 2) * 2
     }
-    // blocky: hold each value for 3 px
     for (let x = 0; x < L; x++) out[x] = out[x - (x % 3)]
     return out
   }
@@ -607,11 +711,92 @@ export class Scene {
     this.LW = LW
     this.LH = LH
     const L = LW * 2
-    this.layers = cfg.layers.map(([color, frac, speed], i) => ({ color, speed, L, hts: this.heights(cfg.shape, L, LH * frac, i) }))
-    this.islands = cfg.shape === 'islands'
-      ? Array.from({ length: 4 }, () => ({ x: this.rand() * LW, y: LH * (0.2 + this.rand() * 0.55), w: 10 + Math.floor(this.rand() * 18), sp: 0.6 + this.rand() * 1.4 }))
-      : []
+    this.layers = cfg.layers.map(([color, frac, speed], i) => ({ color, speed, L, hts: this.heights(cfg.shape, L, LH * frac, i), props: [] }))
+    const front = this.layers[this.layers.length - 1]
+    if (front && cfg.props) {
+      const total = cfg.props.reduce((a, [, w]) => a + w, 0)
+      let x = 10 + this.rand() * 20
+      while (x < L - 30) {
+        let r = this.rand() * total
+        let name = cfg.props[0][0]
+        for (const [n, w] of cfg.props) {
+          if ((r -= w) <= 0) {
+            name = n
+            break
+          }
+        }
+        front.props.push({ name, x: Math.round(x) })
+        x += PROP_BOX[name][2] + 12 + this.rand() * 45
+      }
+    }
+    this.end = cfg.end ? this.buildEnd() : null
     this.parts = Array.from({ length: cfg.n }, () => this.particle(cfg.p, true))
+  }
+
+  /** End: 'main' = the main island (obsidian pillars, crystals, exit portal); 'outer' = outer islands (chorus, End city). */
+  buildEnd() {
+    const { LW, LH } = this
+    const r = this.rand
+    if (this.mode === 'main') {
+      const ground = Array.from({ length: LW }, (_, x) =>
+        Math.round(LH * (0.09 + 0.03 * Math.sin((x / LW) * Math.PI * 3) + 0.015 * Math.sin(x / 7))))
+      const n = 7
+      const pillars = []
+      for (let i = 0; i < n; i++) {
+        const u = (i + 0.5) / n
+        const edge = Math.abs(u - 0.5) * 2
+        pillars.push({ x: Math.round(u * LW), w: 7 + Math.floor(r() * 3), h: Math.round(LH * (0.2 + 0.3 * edge + r() * 0.08)),
+          cage: i === 1 || i === n - 2, ph: r() * 6.28 })
+      }
+      return { mode: 'main', ground, pillars }
+    }
+    const defs = [[0.12, 0.70, 0.20], [0.86, 0.60, 0.20], [0.50, 0.86, 0.28], [0.16, 0.30, 0.11], [0.84, 0.24, 0.12]]
+    const islands = defs.map(([u, v, wf]) => {
+      const w = Math.max(12, Math.round(LW * wf))
+      const rows = []
+      let half = w / 2
+      const depth = Math.max(4, Math.round(w * 0.32))
+      for (let k = 0; k < depth; k++) {
+        rows.push(Math.max(1, Math.round(half)))
+        half *= 0.84 - r() * 0.08
+      }
+      return { cx: Math.round(u * LW), top: Math.round(v * LH), rows, props: [], perches: [], ph: r() * 6.28 }
+    })
+    islands[1].props.push({ name: 'endcity', dx: Math.round(-islands[1].rows[0] * 0.35) })
+    islands[0].props.push({ name: 'chorus', dx: Math.round(-islands[0].rows[0] * 0.45) })
+    islands[2].props.push({ name: 'chorus', dx: Math.round(islands[2].rows[0] * 0.55) })
+    for (const isl of islands) {
+      const half = isl.rows[0]
+      for (const f of [-0.6, -0.2, 0.2, 0.6]) {
+        const dx = Math.round(f * half)
+        if (isl.props.some(p => Math.abs(p.dx - dx) < PROP_BOX[p.name][2] / 2 + 5)) continue
+        isl.perches.push(dx)
+      }
+    }
+    return { mode: 'outer', islands }
+  }
+
+  bob(isl) {
+    return this.reduced?.matches ? 0 : Math.round(Math.sin(this.t * 0.35 + isl.ph))
+  }
+
+  /** Window-space points where shulkers can sit (outer End only). */
+  perches() {
+    if (!this.visible || !this.end || this.end.mode !== 'outer') return []
+    const out = []
+    for (const isl of this.end.islands) {
+      const b = this.bob(isl)
+      for (const dx of isl.perches) out.push({ x: this.rect.x + (isl.cx + dx) * PX, y: this.rect.y + (isl.top + b) * PX })
+    }
+    return out
+  }
+
+  prop(g, name, x, y, alpha) {
+    if (!(this.sheet.complete && this.sheet.naturalWidth)) return
+    const [bx, by, w, h] = PROP_BOX[name]
+    g.globalAlpha = alpha
+    g.drawImage(this.sheet, bx, by, w, h, Math.round(x), Math.round(y), w, h)
+    g.globalAlpha = 1
   }
 
   particle(type, anywhere) {
@@ -636,11 +821,58 @@ export class Scene {
       p.life = anywhere ? r() : 1
       p.s = r() < 0.4 ? 2 : 1
     } else {
-      p.vy = -(1 + r() * 2.5)
-      p.vx = (r() - 0.5) * 1
+      p.vy = -(0.6 + r() * 1.4)
+      p.vx = (r() - 0.5) * 0.6
       if (!anywhere) p.y = LH
     }
     return p
+  }
+
+  drawEnd(g) {
+    const E = this.end
+    const { LW, LH } = this
+    if (E.mode === 'main') {
+      for (const p of E.pillars) {
+        const top = LH - p.h
+        const x0 = p.x - (p.w >> 1)
+        g.fillStyle = 'rgba(100,70,150,0.34)'
+        g.fillRect(x0, top, p.w, p.h)
+        g.fillStyle = 'rgba(60,40,100,0.30)'
+        g.fillRect(x0 + p.w - 2, top, 2, p.h)
+        g.fillStyle = 'rgba(170,130,230,0.26)'
+        g.fillRect(x0, top, 1, p.h)
+        g.fillRect(x0, top, p.w, 1)
+        if (p.cage) {
+          g.fillStyle = 'rgba(210,210,220,0.26)'
+          for (let k = -1; k <= p.w; k += 2) g.fillRect(x0 + k, top - 6, 1, 6)
+          g.fillRect(x0 - 1, top - 6, p.w + 2, 1)
+        }
+        const a = 0.45 + 0.3 * Math.sin(this.t * 2 + p.ph)
+        const lift = this.reduced?.matches ? 0 : Math.round(Math.sin(this.t * 1.2 + p.ph))
+        this.prop(g, 'crystal', p.x - 3, top - 10 - lift, a)
+      }
+      for (let x = 0; x < LW; x++) {
+        const hh = E.ground[x]
+        g.fillStyle = 'rgba(225,215,160,0.20)'
+        g.fillRect(x, LH - hh, 1, hh)
+        g.fillStyle = 'rgba(245,240,200,0.30)'
+        g.fillRect(x, LH - hh, 1, 1)
+      }
+      const mid = LW >> 1
+      this.prop(g, 'portal', mid - 14, LH - E.ground[mid] - 7, 0.85)
+      return
+    }
+    for (const isl of E.islands) {
+      const b = this.bob(isl)
+      isl.rows.forEach((half, k) => {
+        g.fillStyle = k === 0 ? 'rgba(240,232,180,0.32)' : k < 3 ? 'rgba(215,205,155,0.22)' : 'rgba(150,125,175,0.16)'
+        g.fillRect(isl.cx - half, isl.top + b + k, half * 2, 1)
+      })
+      for (const p of isl.props) {
+        const [, , w, h] = PROP_BOX[p.name]
+        this.prop(g, p.name, isl.cx + p.dx - (w >> 1), isl.top + b - h, 0.6)
+      }
+    }
   }
 
   draw(now) {
@@ -664,14 +896,8 @@ export class Scene {
       g.fillStyle = lava
       g.fillRect(0, LH * 0.7, LW, LH * 0.3)
     }
-    for (const isl of this.islands) {
-      isl.x = (isl.x + isl.sp * dt + LW + 40) % (LW + 40) - 20
-      for (let k = 0; k < isl.w / 2; k++) {
-        g.fillStyle = k === 0 ? 'rgba(220,210,150,0.22)' : 'rgba(150,110,200,0.14)'
-        g.fillRect(Math.round(isl.x + k), Math.round(isl.y + k), Math.max(1, isl.w - 2 * k), 1)
-      }
-    }
-    this.layers.forEach((layer, i) => {
+    if (this.end) this.drawEnd(g)
+    this.layers.forEach(layer => {
       const off = Math.floor(this.t * layer.speed) % layer.L
       g.fillStyle = layer.color
       for (let x = 0; x < LW; x++) {
@@ -682,17 +908,13 @@ export class Scene {
         g.fillStyle = 'rgba(240,248,255,0.18)'
         for (let x = 0; x < LW; x++) g.fillRect(x, LH - layer.hts[(x + off) % layer.L], 1, 1)
       }
-      if (cfg.trees && i === this.layers.length - 1) {
-        for (let tx = 0; tx < layer.L; tx += 37) {
-          const x = (tx - off + layer.L) % layer.L
-          if (x > LW + 6) continue
-          const base = LH - layer.hts[tx]
-          g.fillStyle = 'rgba(120,70,80,0.22)'
-          g.fillRect(x, base - 5, 1, 5)
-          g.fillStyle = 'rgba(255,170,210,0.24)'
-          g.fillRect(x - 3, base - 9, 7, 4)
-          g.fillRect(x - 2, base - 10, 5, 1)
-        }
+      for (const pr of layer.props) {
+        const [, , w, h] = PROP_BOX[pr.name]
+        let x = (pr.x - off + layer.L) % layer.L
+        if (x > layer.L - w) x -= layer.L
+        if (x > LW || x < -w) continue
+        const hh = layer.hts[(pr.x + (w >> 1)) % layer.L]
+        this.prop(g, pr.name, x, LH - hh - h + 1, 0.5)
       }
     })
     const [cr, cg, cb] = cfg.pc
@@ -702,10 +924,8 @@ export class Scene {
         p.y += p.vy * dt
         if (cfg.p === 'ember') p.life -= dt * 0.25
         if (cfg.p === 'firefly') {
-          p.vx += (this.rand() - 0.5) * dt * 4
-          p.vy += (this.rand() - 0.5) * dt * 4
-          p.vx = Math.max(-3, Math.min(3, p.vx))
-          p.vy = Math.max(-2, Math.min(2, p.vy))
+          p.vx = Math.max(-3, Math.min(3, p.vx + (this.rand() - 0.5) * dt * 4))
+          p.vy = Math.max(-2, Math.min(2, p.vy + (this.rand() - 0.5) * dt * 4))
         }
         const out = p.y > LH + 2 || p.y < -2 || p.x < -4 || p.x > LW + 4 || p.life <= 0
         if (out) this.parts[i] = p.x < -4 && cfg.p !== 'firefly' ? Object.assign(this.particle(cfg.p, false), { x: LW + 2, y: this.rand() * LH }) : this.particle(cfg.p, false)
@@ -998,7 +1218,8 @@ export default {
     worldStyle.textContent = WORLD_CSS
     document.head.appendChild(worldStyle)
     const critters = new Critters()
-    const scene = new Scene()
+    const scene = new Scene(undefined, () => critters.endMode)
+    critters.perches = () => scene.perches()
     const wipe = new Wipe()
     const rot = new Rotator(ctx.storage, wipe, () => {
       critters.place()
