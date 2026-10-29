@@ -205,7 +205,7 @@ python tools/make_creeper.py      # 苦力怕 → pets/creeper-*/、docs/creeper
 python tools/make_mobs.py         # 其他生物 → pets/mc-*/、docs/mobs.gif
 python tools/make_lantern.py      # 小燈籠 → pets/lantern-buddy/
 python tools/make_activity.py     # 活動圖示 → desktop-plugins/minecraft-activity/plugin.js、docs/activity.gif
-python tools/build_skin.py        # 5 個世界 → skins/*.yaml、docs/islands.gif、docs/thinking.gif
+python tools/build_skin.py        # 10 個世界 → skins/*.yaml、docs/islands.gif、docs/thinking.gif
 python tools/build_skin.py --install                 # 產生並安裝到本機，保留目前的選擇
 python tools/build_skin.py --install --skin=minecraft-end --pet=mc-bee
 python tools/make_preview.py && python tools/record_gif.py   # 預覽頁與 docs/preview.gif（需要 Chrome 或 Edge）
