@@ -1,0 +1,308 @@
+"""Roaming mob sprites: side view (facing right) + front view for the turn animation.
+16x16 per frame, 8 frames per row. All art original, drawn procedurally."""
+
+from __future__ import annotations
+
+import math
+
+from PIL import Image
+
+from make_icons import F, S, G
+
+BOB = [0, -1, -1, 0, 0, 1, 1, 0]
+
+
+def c_allay(f: int) -> Image.Image:
+    g = G()
+    dy = BOB[f]
+    wing = (200, 236, 255, 210)
+    if f % 2 == 0:
+        g.rect(2, 3 + dy, 4, 5, wing)
+    else:
+        g.rect(1, 7 + dy, 5, 2, wing)
+    g.rect(6, 3 + dy, 6, 5, (120, 196, 240, 255))
+    g.rect(6, 3 + dy, 6, 1, (170, 224, 255, 255))
+    g.p(9, 5 + dy, (20, 40, 80, 255))
+    g.p(11, 5 + dy, (20, 40, 80, 255))
+    g.rect(7, 8 + dy, 4, 4, (90, 170, 230, 255))
+    g.rect(8, 12 + dy, 2, 2, (70, 150, 215, 255))
+    g.p(12, 9 + dy, (90, 170, 230, 255))
+    g.outline()
+    return g.im
+
+
+def c_phantom(f: int) -> Image.Image:
+    g = G()
+    flap = [0, 1, 2, 1, 0, -1, -2, -1][f]
+    body, dark = (70, 90, 140, 255), (50, 64, 108, 255)
+    tip = 6 - (3 + flap)
+    g.rect(6, tip, 5, 7 - tip, dark)
+    g.rect(3, 7, 10, 3, body)
+    g.rect(3, 9, 10, 1, (110, 130, 180, 255))
+    g.rect(13, 7, 2, 2, body)
+    g.p(14, 7, (130, 255, 140, 255))
+    g.rect(1, 8, 2, 1, body)
+    g.p(0, 9, body)
+    g.outline()
+    return g.im
+
+
+
+
+DARK = (54, 36, 22, 255)
+WING = (225, 240, 255, 215)
+
+
+def tri(g, pts, col):
+    (x0, y0), (x1, y1), (x2, y2) = pts
+    for y in range(min(y0, y1, y2), max(y0, y1, y2) + 1):
+        for x in range(min(x0, x1, x2), max(x0, x1, x2) + 1):
+            d1 = (x - x1) * (y0 - y1) - (x0 - x1) * (y - y1)
+            d2 = (x - x2) * (y1 - y2) - (x1 - x2) * (y - y2)
+            d3 = (x - x0) * (y2 - y0) - (x2 - x0) * (y - y0)
+            if not ((d1 < 0 or d2 < 0 or d3 < 0) and (d1 > 0 or d2 > 0 or d3 > 0)):
+                g.p(x, y, col)
+
+
+def bee_side(f, angry=False, pollen=False):
+    g = G()
+    body = (232, 150, 40, 255) if angry else (246, 200, 50, 255)
+    for y in range(6, 12):
+        for x in range(3, 13):
+            g.p(x, y, DARK if x in (5, 6, 9) else body)
+    g.rect(11, 7, 2, 2, (200, 30, 30, 255) if angry else (20, 20, 24, 255))
+    g.p(2, 9, (90, 90, 96, 255))
+    g.p(12, 5, DARK)
+    g.p(13, 4, DARK)
+    if pollen:
+        for x in (4, 8, 10):
+            g.p(x, 11, (255, 236, 130, 255))
+    if f % 2 == 0:
+        g.rect(5, 2, 3, 4, WING)
+        g.rect(8, 3, 2, 3, WING)
+    else:
+        g.rect(4, 5, 7, 1, WING)
+    g.outline()
+    return g.im
+
+
+def bee_front(f, angry=False, pollen=False):
+    g = G()
+    body = (232, 150, 40, 255) if angry else (246, 200, 50, 255)
+    g.rect(4, 5, 8, 7, body)
+    g.rect(4, 10, 8, 1, DARK)
+    eye = (200, 30, 30, 255) if angry else (20, 20, 24, 255)
+    g.rect(5, 7, 2, 2, eye)
+    g.rect(9, 7, 2, 2, eye)
+    for x, y in ((6, 4), (5, 3), (9, 4), (10, 3)):
+        g.p(x, y, DARK)
+    if pollen:
+        for x in (5, 8, 10):
+            g.p(x, 11, (255, 236, 130, 255))
+    if f % 2 == 0:
+        g.rect(1, 3, 3, 4, WING)
+        g.rect(12, 3, 3, 4, WING)
+    else:
+        g.rect(1, 6, 3, 2, WING)
+        g.rect(12, 6, 3, 2, WING)
+    g.outline()
+    return g.im
+
+
+PARROTS = {
+    "red": ((214, 44, 44, 255), (60, 100, 220, 255), (250, 220, 70, 255)),
+    "blue": ((56, 96, 226, 255), (250, 210, 60, 255), (220, 230, 250, 255)),
+    "green": ((76, 182, 64, 255), (250, 210, 60, 255), (250, 230, 90, 255)),
+    "cyan": ((52, 196, 210, 255), (250, 210, 60, 255), (240, 240, 230, 255)),
+    "gray": ((150, 150, 156, 255), (110, 110, 118, 255), (245, 245, 245, 255)),
+}
+
+
+def parrot_side(f, c):
+    body, wing, face = PARROTS[c]
+    g = G()
+    g.rect(2, 10, 3, 3, body)
+    g.p(1, 12, body)
+    g.rect(4, 6, 6, 6, body)
+    g.rect(8, 3, 4, 4, face)
+    g.rect(12, 4, 2, 2, (60, 60, 64, 255))
+    g.p(12, 6, (60, 60, 64, 255))
+    g.p(10, 4, (20, 20, 24, 255))
+    wy = [2, 4, 8, 4, 2, 4, 8, 4][f]
+    g.rect(4, wy, 5, 3, wing)
+    g.rect(6, 12, 1, 2, (90, 90, 90, 255))
+    g.rect(8, 12, 1, 2, (90, 90, 90, 255))
+    g.outline()
+    return g.im
+
+
+def parrot_front(f, c):
+    body, wing, face = PARROTS[c]
+    g = G()
+    g.rect(6, 6, 4, 7, body)
+    g.rect(5, 2, 6, 5, face)
+    g.p(6, 4, (20, 20, 24, 255))
+    g.p(9, 4, (20, 20, 24, 255))
+    g.rect(7, 5, 2, 2, (60, 60, 64, 255))
+    wy = [3, 5, 8, 5, 3, 5, 8, 5][f]
+    g.rect(1, wy, 5, 2, wing)
+    g.rect(10, wy, 5, 2, wing)
+    g.outline()
+    return g.im
+
+
+def allay_front(f):
+    g = G()
+    dy = BOB[f]
+    wing = (200, 236, 255, 200)
+    if f % 2 == 0:
+        g.rect(1, 3 + dy, 4, 5, wing)
+        g.rect(11, 3 + dy, 4, 5, wing)
+    else:
+        g.rect(1, 7 + dy, 4, 2, wing)
+        g.rect(11, 7 + dy, 4, 2, wing)
+    g.rect(5, 2 + dy, 6, 5, (120, 196, 240, 255))
+    g.rect(5, 2 + dy, 6, 1, (170, 224, 255, 255))
+    g.p(6, 4 + dy, (20, 40, 80, 255))
+    g.p(9, 4 + dy, (20, 40, 80, 255))
+    g.rect(6, 7 + dy, 4, 4, (90, 170, 230, 255))
+    g.rect(7, 11 + dy, 2, 2, (70, 150, 215, 255))
+    g.outline()
+    return g.im
+
+
+def phantom_front(f):
+    g = G()
+    flap = [0, 1, 2, 1, 0, -1, -2, -1][f]
+    body, dark = (70, 90, 140, 255), (50, 64, 108, 255)
+    for k in range(7):
+        y = 7 - round(flap * k / 6)
+        g.rect(k, y, 1, 2, dark)
+        g.rect(15 - k, y, 1, 2, dark)
+    g.rect(6, 5, 4, 5, body)
+    g.p(6, 6, (130, 255, 140, 255))
+    g.p(9, 6, (130, 255, 140, 255))
+    g.rect(7, 10, 2, 3, dark)
+    g.outline()
+    return g.im
+
+
+DRAGON, DRAGON_W, EYE_P = (34, 30, 40, 255), (64, 54, 80, 255), (210, 100, 255, 255)
+
+
+def dragon_side(f):
+    g = G()
+    wy = [2, 3, 5, 7, 9, 7, 5, 3][f]
+    tri(g, ((4, 8), (7, wy), (10, 8)), DRAGON_W)
+    g.rect(3, 8, 8, 3, DRAGON)
+    g.rect(0, 10, 3, 1, DRAGON)
+    g.p(0, 11, DRAGON)
+    g.rect(11, 6, 2, 3, DRAGON)
+    g.rect(12, 5, 4, 3, DRAGON)
+    g.p(14, 6, EYE_P)
+    g.p(13, 4, DRAGON)
+    g.rect(5, 11, 1, 2, DRAGON)
+    g.rect(9, 11, 1, 2, DRAGON)
+    g.outline((120, 80, 150, 255))
+    return g.im
+
+
+def dragon_front(f):
+    g = G()
+    wy = [2, 3, 5, 7, 9, 7, 5, 3][f]
+    tri(g, ((6, 8), (0, wy), (5, 10)), DRAGON_W)
+    tri(g, ((9, 8), (15, wy), (10, 10)), DRAGON_W)
+    g.rect(6, 6, 4, 6, DRAGON)
+    g.rect(6, 2, 4, 4, DRAGON)
+    g.p(6, 3, EYE_P)
+    g.p(9, 3, EYE_P)
+    g.rect(7, 12, 2, 3, DRAGON)
+    g.outline((120, 80, 150, 255))
+    return g.im
+
+
+def bat_front(f):
+    g = G()
+    body, wing = (110, 80, 58, 255), (70, 50, 38, 255)
+    tip = [1, 4, 8, 11, 8, 4, 1, 1][f]
+    tri(g, ((6, 6), (0, tip), (5, 10)), wing)
+    tri(g, ((9, 6), (15, tip), (10, 10)), wing)
+    g.rect(6, 5, 4, 6, body)
+    g.p(6, 4, body)
+    g.p(9, 4, body)
+    g.p(7, 7, (240, 220, 80, 255))
+    g.p(8, 7, (240, 220, 80, 255))
+    g.outline()
+    return g.im
+
+
+def ghast_front(f):
+    g = G()
+    for y in range(0, 11):
+        for x in range(2, 14):
+            v = 255 if y < 2 else 236 if y < 9 else 214
+            g.p(x, y, (v, v, v, 255))
+    g.rect(4, 4, 2, 1, (110, 110, 116, 255))
+    g.rect(10, 4, 2, 1, (110, 110, 116, 255))
+    g.rect(7, 7, 2, 2, (80, 80, 86, 255))
+    for k, x in enumerate((3, 5, 7, 9, 11, 13)):
+        for r in range(4 + (k % 2)):
+            dx = round(math.sin((f / 8) * 2 * math.pi + r * 0.7) * (r / 3))
+            g.p(x + dx, 11 + r, (226, 226, 226, 255))
+    g.outline((120, 120, 126, 255))
+    return g.im
+
+
+def blaze_front(f):
+    g = G()
+    rods = []
+    for ring, (cy, rx, sign) in enumerate(((4, 6.0, 1), (10, 6.5, -1))):
+        for k in range(4):
+            ang = sign * (f / 8) * (math.pi / 2) + k * math.pi / 2 + ring * math.pi / 4
+            rods.append((math.sin(ang), round(7 + math.cos(ang) * rx), cy))
+    rods.sort()
+
+    def rod(x, y, d):
+        k = 0.55 if d < 0 else 1.0
+        g.rect(x, y, 2, 5, (int(225 * k), int(140 * k), int(30 * k), 255))
+        g.rect(x, y, 2, 1, (int(255 * k), int(225 * k), int(120 * k), 255))
+
+    for d, x, y in rods:
+        if d < 0:
+            rod(x, y, d)
+    g.rect(4, 2, 8, 7, (255, 206, 70, 255))
+    g.rect(4, 2, 8, 1, (255, 238, 150, 255))
+    g.rect(5, 4, 2, 2, (70, 34, 10, 255))
+    g.rect(9, 4, 2, 2, (70, 34, 10, 255))
+    g.rect(6, 7, 4, 1, (170, 80, 20, 255))
+    for d, x, y in rods:
+        if d >= 0:
+            rod(x, y, d)
+    g.outline()
+    return g.im
+
+
+SPRITES = {
+    "bee": (lambda f: bee_side(f), lambda f: bee_front(f)),
+    "bee-angry": (lambda f: bee_side(f, angry=True), lambda f: bee_front(f, angry=True)),
+    "bee-pollen": (lambda f: bee_side(f, pollen=True), lambda f: bee_front(f, pollen=True)),
+    **{f"parrot-{c}": ((lambda f, c=c: parrot_side(f, c)), (lambda f, c=c: parrot_front(f, c))) for c in PARROTS},
+    "allay": (c_allay, allay_front),
+    "phantom": (c_phantom, phantom_front),
+    "dragon": (dragon_side, dragon_front),
+    "bat": (None, bat_front),
+    "ghast": (None, ghast_front),
+    "blaze": (None, blaze_front),
+}
+ROWS = [f"{v}:{view}" for v, (side, front) in SPRITES.items()
+        for view, fn in (("side", side), ("front", front)) if fn]
+
+
+def atlas() -> Image.Image:
+    img = Image.new("RGBA", (S * F, S * len(ROWS)), (0, 0, 0, 0))
+    for r, row in enumerate(ROWS):
+        v, view = row.split(":")
+        fn = SPRITES[v][0 if view == "side" else 1]
+        for c in range(F):
+            img.paste(fn(c), (c * S, r * S))
+    return img

@@ -279,138 +279,24 @@ DRAW = {"think": think, "write": write, "shell": furnace, "web": web, "browse": 
 
 
 
-# ---- roaming critters (16x16, 8 frames, facing right) --------------------------------
-CRITTER_ROWS = ["bee", "allay", "bat", "ghast", "blaze", "eye", "phantom"]
-BOB = [0, -1, -1, 0, 0, 1, 1, 0]
-
-
-def c_bee(f: int) -> Image.Image:
-    g = G()
-    dy = BOB[f]
-    for y in range(6, 12):
-        for x in range(2, 13):
-            g.p(x, y + dy, (54, 36, 22, 255) if x in (5, 6, 9) else (246, 200, 50, 255))
-    g.rect(11, 7 + dy, 2, 2, (20, 20, 24, 255))
-    g.p(1, 9 + dy, (90, 90, 96, 255))
-    g.p(13, 5 + dy, (54, 36, 22, 255))
-    g.p(14, 4 + dy, (54, 36, 22, 255))
-    wing = (225, 240, 255, 230)
-    if f % 2 == 0:
-        g.rect(4, 2 + dy, 3, 4, wing)
-        g.rect(8, 3 + dy, 2, 3, wing)
-    else:
-        g.rect(3, 5 + dy, 7, 1, wing)
-    g.outline()
-    return g.im
-
-
-def c_allay(f: int) -> Image.Image:
-    g = G()
-    dy = BOB[f]
-    wing = (200, 236, 255, 210)
-    if f % 2 == 0:
-        g.rect(2, 3 + dy, 4, 5, wing)
-    else:
-        g.rect(1, 7 + dy, 5, 2, wing)
-    g.rect(6, 3 + dy, 6, 5, (120, 196, 240, 255))
-    g.rect(6, 3 + dy, 6, 1, (170, 224, 255, 255))
-    g.p(9, 5 + dy, (20, 40, 80, 255))
-    g.p(11, 5 + dy, (20, 40, 80, 255))
-    g.rect(7, 8 + dy, 4, 4, (90, 170, 230, 255))
-    g.rect(8, 12 + dy, 2, 2, (70, 150, 215, 255))
-    g.p(12, 9 + dy, (90, 170, 230, 255))
-    g.outline()
-    return g.im
-
-
-def c_bat(f: int) -> Image.Image:
-    g = G()
-    up = f % 4 < 2
-    body, wing = (96, 70, 52, 255), (64, 46, 36, 255)
-    g.rect(6, 6, 4, 5, body)
-    g.p(6, 5, body)
-    g.p(9, 5, body)
-    g.p(7, 7, (230, 60, 50, 255))
-    g.p(9, 7, (230, 60, 50, 255))
-    for k in range(5):
-        y = 4 + k // 2 if up else 9 - k // 2
-        for x in (5 - k, 10 + k):
-            g.p(x, y, wing)
-            g.p(x, y + 1, wing)
-    g.outline()
-    return g.im
-
-
-def c_ghast(f: int) -> Image.Image:
-    g = G()
-    dy = [0, 0, -1, -1, -1, 0, 0, 0][f]
-    g.rect(3, 1 + dy, 10, 9, (240, 240, 240, 255))
-    g.rect(3, 1 + dy, 10, 1, (255, 255, 255, 255))
-    g.rect(3, 9 + dy, 10, 1, (205, 205, 205, 255))
-    g.rect(5, 4 + dy, 2, 1, (90, 90, 96, 255))
-    g.rect(9, 4 + dy, 2, 1, (90, 90, 96, 255))
-    g.rect(7, 6 + dy, 2, 2, (70, 70, 76, 255))
-    for k, x in enumerate((4, 6, 8, 10, 12)):
-        g.rect(x, 10 + dy, 1, 3 + (f + k) % 3, (225, 225, 225, 255))
-    g.outline()
-    return g.im
-
-
-def c_blaze(f: int) -> Image.Image:
-    g = G()
-    for k in range(4):
-        a = (f / 8 + k / 4) * 2 * math.pi
-        g.rect(round(7 + math.cos(a) * 6), round(9 + math.sin(a) * 2.5), 2, 4, (255, 170, 40, 255))
-    g.rect(5, 2, 6, 6, (255, 214, 80, 255))
-    g.rect(5, 2, 6, 1, (255, 240, 150, 255))
-    g.p(6, 4, (60, 30, 10, 255))
-    g.p(9, 4, (60, 30, 10, 255))
-    g.rect(7, 6, 2, 1, (150, 70, 20, 255))
-    g.outline()
-    return g.im
-
-
-def c_eye(f: int) -> Image.Image:
-    g = G()
-    for y in range(S):
-        for x in range(S):
-            d = math.hypot(x - 7.5, y - 7.5)
-            if d < 4.6:
-                g.p(x, y, (40, 150, 110, 255) if d > 3.4 else (70, 200, 150, 255) if d > 1.8 else (200, 240, 170, 255))
-    g.rect(7, 5, 2, 6, (20, 30, 26, 255))
-    g.outline()
-    for k in range(3):
-        a = (f / 8 + k / 3) * 2 * math.pi
-        g.p(round(7.5 + math.cos(a) * 6.5), round(7.5 + math.sin(a) * 6.5), (190, 110, 240, 255))
-    return g.im
-
-
-def c_phantom(f: int) -> Image.Image:
-    g = G()
-    flap = [0, 1, 2, 1, 0, -1, -2, -1][f]
-    body, dark = (70, 90, 140, 255), (50, 64, 108, 255)
-    tip = 6 - (3 + flap)
-    g.rect(6, tip, 5, 7 - tip, dark)
-    g.rect(3, 7, 10, 3, body)
-    g.rect(3, 9, 10, 1, (110, 130, 180, 255))
-    g.rect(13, 7, 2, 2, body)
-    g.p(14, 7, (130, 255, 140, 255))
-    g.rect(1, 8, 2, 1, body)
-    g.p(0, 9, body)
-    g.outline()
-    return g.im
-
-
-CRITTER_DRAW = {"bee": c_bee, "allay": c_allay, "bat": c_bat, "ghast": c_ghast, "blaze": c_blaze,
-                "eye": c_eye, "phantom": c_phantom}
-
-
-def critter_atlas() -> Image.Image:
-    img = Image.new("RGBA", (S * F, S * len(CRITTER_ROWS)), (0, 0, 0, 0))
-    for r, name in enumerate(CRITTER_ROWS):
-        for c in range(F):
-            img.paste(CRITTER_DRAW[name](c), (c * S, r * S))
-    return img
+def world_assets():
+    """Per-world CSS overrides the plugin applies while it rotates worlds locally."""
+    import build_skin as bs
+    rules, info = [], {}
+    for name, w in bs.WORLDS.items():
+        key = w["biome"]
+        island = bs.sheet_uri(bs.render_island(bs.ISLAND_SIZE, bs.ISLAND_FRAMES, key), 48)
+        strip = bs.png_data_uri(bs.tex_grass_strip(*w["strip"]))
+        stars = bs.svg_data_uri(bs.stars_svg().replace('fill="white"', f'fill="{w["star"]}"'))
+        clouds = bs.svg_data_uri(bs.clouds_svg().replace('fill="white"', f'fill="{w["cloud"]}"'))
+        sel = f'html[data-mc-theme="1"][data-mc-rot="{key}"]'
+        rules.append(f'{sel}{{--mc-world:"{key}";--mc-grass:{w["accent"]};--mc-island:url("{island}");'
+                     f'--mc-grass-strip:url("{strip}");--mc-stars:url("{stars}");--mc-clouds:url("{clouds}")}}')
+        rules.append(f'{sel} [data-slot="aui_intro"]::after{{content:"{w["splash"]}"}}')
+        rules.append(f'{sel} [data-slot="aui_intro"]::before{{filter:drop-shadow(0 16px 14px {w["glow"]})}}')
+        rules.append(f'{sel} [data-slot="aui_thread-viewport"]{{background-color:{w["tint"]}}}')
+        info[key] = {"label": w["label"], "skin": name}
+    return "".join(rules), info
 
 
 def atlas() -> Image.Image:
@@ -460,9 +346,12 @@ def main() -> None:
     preview(a)
     src = (ROOT / "src" / "activity-plugin.js").read_text(encoding="utf-8")
     kinds = json.dumps([{"kind": k, "label": label} for k, label in KINDS], ensure_ascii=False)
-    b = critter_atlas()
+    import critters_art as ca
+    b = ca.atlas()
+    wcss, winfo = world_assets()
     out = (src.replace("__ATLAS__", data_uri(a)).replace("__KINDS__", kinds)
-              .replace("__CRITTERS__", data_uri(b)).replace("__CRITTER_ROWS__", json.dumps(CRITTER_ROWS))
+              .replace("__CRITTERS__", data_uri(b)).replace("__CRITTER_ROWS__", json.dumps(ca.ROWS))
+              .replace("__WORLD_CSS__", json.dumps(wcss)).replace("__WORLD_INFO__", json.dumps(winfo, ensure_ascii=False))
               .replace("__GENERATED__", "GENERATED by tools/make_activity.py from src/activity-plugin.js — edit that file."))
     dest = ROOT / "desktop-plugins" / "minecraft-activity" / "plugin.js"
     dest.parent.mkdir(parents=True, exist_ok=True)
