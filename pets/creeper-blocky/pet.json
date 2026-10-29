@@ -1,0 +1,6 @@
+{
+  "id": "creeper-blocky",
+  "displayName": "Creeper Blocky",
+  "description": "A pixel creeper that hops, reads and (almost) explodes alongside Hermes.",
+  "spritesheetPath": "spritesheet.png"
+}

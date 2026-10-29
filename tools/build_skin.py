@@ -27,6 +27,7 @@ from PIL import Image
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from pixels import DIRT, dirt_hd, grass_side_hd, grass_top_hd, noise_texture, value_noise  # noqa: E402,F401
 from make_creeper import head_pixels  # noqa: E402
+from voxel import render as render_island  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC, OUT, DOCS = ROOT / "src", ROOT / "skins", ROOT / "docs"
@@ -78,24 +79,29 @@ def tex_stone() -> Image.Image:
     return grid_png(noise_texture(16, 16, ["#8f8f8f", "#7f7f7f", "#747474", "#686868", "#5c5c5c"], 5, [1, 3, 4, 3, 1]))
 
 
-def tex_grass_strip() -> Image.Image:
-    """32x24 tile: soft turf edge with rounded drips over dark dirt (text sits on the dirt)."""
+def tex_grass_strip(top_pal=None, sub_pal=None, petals: bool = False) -> Image.Image:
+    """32x24 tile: soft turf edge with rounded drips over dark ground (text sits on it)."""
     W, H = 32, 24
-    top = grass_top_hd(W, 61)
-    dirt = dirt_hd(W, 62, pebbles=False)
+    top = grass_top_hd(W, 61, top_pal)
+    dirt = dirt_hd(W, 62, pebbles=False, pal=sub_pal)
     edge = value_noise(W, 1, 4, 63)[0]
-    out = []
-    for y in range(H):
-        out.append([None] * W)
+    rng = random.Random(64)
+    out = [[None] * W for _ in range(H)]
     for x in range(W):
         depth = 4 + int(edge[x] * 4)
         for y in range(H):
             if y < depth:
-                out[y][x] = top[y][x] if y < depth - 1 else "#4f8f37"
+                out[y][x] = top[y][x] if y < depth - 1 else top[0][0] if top_pal is None else (top_pal or ["#4f8f37"])[0]
             else:
                 r, g, b = hex_rgb(dirt[y][x])
                 k = 0.5 if y == depth else 0.36
                 out[y][x] = (int(r * k), int(g * k), int(b * k), 255)
+        if top_pal is None:
+            out[depth - 1][x] = "#4f8f37"
+    if petals:
+        for _ in range(9):
+            x, y = rng.randrange(W), rng.randrange(3)
+            out[y][x] = rng.choice(["#f7b8d2", "#fbd0e2", "#e98fb6"])
     return grid_png(out)
 
 
@@ -240,51 +246,73 @@ def block_scalar(text: str, indent: str = "  ") -> str:
 
 
 ZPIX = "https://cdn.jsdelivr.net/gh/SolidZORO/zpix-pixel-font/website/zpix.woff2"
-CUBIC = "https://cdn.jsdelivr.net/gh/ACh-K/Cubic-11@main/fonts/web/Cubic_11.woff2"
-PIXELIFY = "https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap"
 CJK = '"Microsoft JhengHei UI", "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", "Segoe UI", sans-serif'
-LATIN = "U+0000-024F, U+2000-206F, U+20A0-20CF, U+2100-214F"
+FONT_IMPORT = f'@font-face{{font-family:"Zpix";src:url("{ZPIX}") format("woff2");font-display:swap}}'
+FONT_STACK = f'"Zpix", {CJK}'
 
-# skin name -> (label, font import CSS, --mc-font stack)
-FONTS = {
-    "minecraft": ("Zpix 全像素", f'@font-face{{font-family:"Zpix";src:url("{ZPIX}") format("woff2");font-display:swap}}',
-                  f'"Zpix", {CJK}'),
-    "minecraft-cubic": ("俐方體 11 號 全像素", f'@font-face{{font-family:"Cubic 11";src:url("{CUBIC}") format("woff2");font-display:swap}}',
-                        f'"Cubic 11", {CJK}'),
-    "minecraft-mixed": ("英數 Zpix 像素 + 中文正黑體",
-                        f'@font-face{{font-family:"Zpix Latin";src:url("{ZPIX}") format("woff2");font-display:swap;unicode-range:{LATIN}}}',
-                        f'"Zpix Latin", {CJK}'),
-    "minecraft-pixelify": ("Pixelify Sans + 正黑體（初版）", f'@import url("{PIXELIFY}");', f'"Pixelify Sans", {CJK}'),
+ISLAND_SIZE, ISLAND_FRAMES = 48, 24   # shown at 144px (3x)
+GRASS_TOP_DEF = None
+
+# skin name -> world settings (all share the Zpix font and the same layout)
+WORLDS = {
+    "minecraft": dict(label="主世界", biome="overworld", accent="#7bd34a", splash="Also try Minecraft!",
+                      star="white", cloud="white", glow="rgba(0, 0, 0, 0.45)", tint="transparent",
+                      strip=(None, None, False)),
+    "minecraft-nether": dict(label="地獄", biome="nether", accent="#ff6a3d", splash="Also try the Overworld!",
+                             star="#ff9a4a", cloud="#ff5a3a", glow="rgba(255, 110, 40, 0.38)", tint="rgba(120, 20, 20, 0.10)",
+                             strip=(["#7a1e28", "#8e2430", "#a82c36", "#c23d3f", "#d24a48", "#e05a50"],
+                                    ["#4a1a1e", "#5a2024", "#6a282a", "#7a3030", "#8a3838"], False)),
+    "minecraft-end": dict(label="終界", biome="end", accent="#c58cff", splash="The End?",
+                          star="#e8d8ff", cloud="#b48cff", glow="rgba(200, 120, 255, 0.38)", tint="rgba(60, 20, 90, 0.12)",
+                          strip=(["#c9c48a", "#d0cb8e", "#dcd79a", "#e6e2a8", "#ece8b6", "#f2eec0"],
+                                 ["#140c1e", "#1d1428", "#22182f", "#2a1e3a", "#31233f"], False)),
+    "minecraft-snow": dict(label="雪原", biome="snow", accent="#8fd3ff", splash="Brrr! Bring a coat!",
+                           star="white", cloud="white", glow="rgba(140, 200, 255, 0.32)", tint="rgba(120, 170, 220, 0.06)",
+                           strip=(["#c8d6e4", "#d6e2ee", "#e2ebf4", "#ecf2f8", "#f4f8fc", "#ffffff"], None, False)),
+    "minecraft-cherry": dict(label="櫻花林", biome="cherry", accent="#ff9cc8", splash="Petals everywhere!",
+                             star="#ffd6ea", cloud="#ffc0dc", glow="rgba(255, 150, 200, 0.32)", tint="rgba(255, 150, 200, 0.05)",
+                             strip=(None, None, True)),
 }
+OLD_SKINS = ["minecraft-cubic", "minecraft-mixed", "minecraft-pixelify"]
+
+
+def sheet_uri(frames: list[Image.Image], colors: int) -> str:
+    w, h = frames[0].size
+    sheet = Image.new("RGBA", (w * len(frames), h))
+    for k, fr in enumerate(frames):
+        sheet.paste(fr, (k * w, 0))
+    return png_data_uri(sheet.quantize(colors=colors, method=Image.Quantize.FASTOCTREE))
 
 
 def build() -> Path:
     OUT.mkdir(exist_ok=True)
     DOCS.mkdir(exist_ok=True)
-    frames = spin_frames()
-    sheet = Image.new("RGBA", (SPIN_SIZE * SPIN_FRAMES, SPIN_SIZE))
-    for i, fr in enumerate(frames):
-        sheet.paste(fr, (i * SPIN_SIZE, 0))
-    sheet_q = sheet.quantize(colors=64, method=Image.Quantize.FASTOCTREE)
-
-    assets = {
+    common = {
         "png:noise": png_data_uri(tex_noise()),
         "png:stone": png_data_uri(tex_stone()),
-        "png:grass_strip": png_data_uri(tex_grass_strip()),
-        "png:spin": png_data_uri(sheet_q),
-        "svg:stars": svg_data_uri(stars_svg()),
-        "svg:clouds": svg_data_uri(clouds_svg()),
+        "png:spin": sheet_uri(spin_frames(24, SPIN_FRAMES), 48),   # tiny "thinking" block (shown at 20px)
     }
     src_css = (SRC / "desktop.css").read_text(encoding="utf-8")
     base_yaml = (SRC / "skin.base.yaml").read_text(encoding="utf-8").rstrip()
     base_yaml = re.sub(r"^#.*\n(#.*\n)*", "", base_yaml)
     hero, logo = banner_hero(), banner_logo()
-    out = OUT / "minecraft.yaml"
-    for name, (label, font_import, stack) in FONTS.items():
-        css = (src_css.replace("{{font_import}}", font_import).replace("{{font_stack}}", stack)
-               .replace("{{spin_frames}}", str(SPIN_FRAMES))
-               .replace("{{spin_duration}}", "1.6s")
-               .replace("{{spin_duration_fast}}", "0.7s"))
+    islands = {}
+    for name, w in WORLDS.items():
+        fr = render_island(ISLAND_SIZE, ISLAND_FRAMES, w["biome"])
+        islands[name] = fr
+        top_pal, sub_pal, petals = w["strip"]
+        assets = dict(common, **{
+            "png:island": sheet_uri(fr, 48),
+            "png:grass_strip": png_data_uri(tex_grass_strip(top_pal, sub_pal, petals)),
+            "svg:stars": svg_data_uri(stars_svg().replace('fill="white"', f'fill="{w["star"]}"')),
+            "svg:clouds": svg_data_uri(clouds_svg().replace('fill="white"', f'fill="{w["cloud"]}"')),
+        })
+        css = src_css
+        for k, v in {"font_import": FONT_IMPORT, "font_stack": FONT_STACK, "spin_frames": str(SPIN_FRAMES),
+                     "spin_duration_fast": "0.7s", "island_frames": str(ISLAND_FRAMES),
+                     "island_duration": f"{ISLAND_FRAMES * 0.2:.1f}s", "splash": w["splash"],
+                     "hero_glow": w["glow"], "sky_tint": w["tint"], "accent": w["accent"]}.items():
+            css = css.replace("{{" + k + "}}", v)
         used = sorted(set(re.findall(r'url\("\{\{([a-z]+:[a-z_]+)\}\}"\)', css)))
         for key in used:
             css = css.replace(f'url("{{{{{key}}}}}")', f"var(--mc-{key.split(':')[1].replace('_', '-')})")
@@ -298,7 +326,9 @@ def build() -> Path:
         if len(css.encode()) > CSS_CAP:
             raise SystemExit(f"{name}: customCSS is {len(css.encode())} bytes > {CSS_CAP} cap")
         body = re.sub(r"^name: .*$", f"name: {name}", base_yaml, count=1, flags=re.M)
-        body = re.sub(r'^description: "(.*)"$', lambda m: f'description: "{m.group(1)} · 字型：{label}"', body, count=1, flags=re.M)
+        body = re.sub(r'^description: "(.*)"$', lambda m: f'description: "{m.group(1)} · {w["label"]}"', body, count=1, flags=re.M)
+        for key in ("ui_accent", "banner_accent", "input_rule"):
+            body = re.sub(rf'^(  {key}: )"#[0-9a-fA-F]{{6}}"', rf'\1"{w["accent"]}"', body, count=1, flags=re.M)
         yaml_text = (
             "# Hermes × Minecraft skin — GENERATED by tools/build_skin.py, edit src/ instead.\n"
             "# https://github.com/XiaoJunX1005/hermes-minecraft-theme\n"
@@ -308,15 +338,30 @@ def build() -> Path:
             + "customCSS: " + block_scalar(css) + "\n"
         )
         (OUT / f"{name}.yaml").write_text(yaml_text, encoding="utf-8")
-        print(f"wrote skins/{name}.yaml  (customCSS {len(css.encode())}/{CSS_CAP} bytes) — {label}")
+        print(f"wrote skins/{name}.yaml  (customCSS {len(css.encode())}/{CSS_CAP} bytes) — {w['label']}")
+    for old in OLD_SKINS:
+        (OUT / f"{old}.yaml").unlink(missing_ok=True)
 
+    # README previews
     big = [Image.alpha_composite(Image.new("RGBA", (112, 112), (23, 25, 31, 255)),
-                                 fr.resize((112, 112), Image.NEAREST)).convert("RGB") for fr in frames] * 4
+                                 fr.resize((112, 112), Image.NEAREST)).convert("RGB") for fr in spin_frames(56, SPIN_FRAMES)] * 4
     gpal = big[0].quantize(colors=128, method=Image.Quantize.MEDIANCUT)
-    pal = [im.quantize(palette=gpal, dither=Image.Dither.NONE) for im in big]
-    pal[0].save(DOCS / "grass-block.gif", save_all=True, append_images=pal[1:], duration=200, loop=0)
-
-    return out
+    q = [im.quantize(palette=gpal, dither=Image.Dither.NONE) for im in big]
+    q[0].save(DOCS / "grass-block.gif", save_all=True, append_images=q[1:], duration=200, loop=0)
+    cell = ISLAND_SIZE * 3
+    gif = []
+    for f in range(ISLAND_FRAMES):
+        c = Image.new("RGBA", (cell * len(WORLDS), cell), (21, 23, 28, 255))
+        for k, fr in enumerate(islands.values()):
+            c.alpha_composite(fr[f].resize((cell, cell), Image.NEAREST), (k * cell, 0))
+        gif.append(c.convert("RGB"))
+    strip = Image.new("RGB", (gif[0].width, gif[0].height * 3))
+    for k, f in enumerate((0, 8, 16)):
+        strip.paste(gif[f], (0, gif[0].height * k))
+    pal = strip.quantize(colors=200, method=Image.Quantize.MEDIANCUT)
+    q = [im.quantize(palette=pal, dither=Image.Dither.NONE) for im in gif]
+    q[0].save(DOCS / "islands.gif", save_all=True, append_images=q[1:], duration=200, loop=0)
+    return OUT / "minecraft.yaml"
 
 
 def hermes_home() -> Path:
@@ -329,17 +374,19 @@ def hermes_home() -> Path:
     return Path.home() / ".hermes"
 
 
-def install(skin: Path, skin_name: str = "minecraft") -> None:
-    """Copy every skin variant + both pets; keep anything else the user has installed."""
+def install(skin: Path, skin_name: str = "minecraft", pet: str = "creeper-blocky") -> None:
+    """Copy every world skin + all pets; drop the retired font-variant skins."""
     home = hermes_home()
     (home / "skins").mkdir(parents=True, exist_ok=True)
-    for name in FONTS:
+    for name in WORLDS:
         shutil.copy2(OUT / f"{name}.yaml", home / "skins" / f"{name}.yaml")
-    for slug in ("creeper-buddy", "lantern-buddy"):
-        if (ROOT / "pets" / slug).is_dir():
-            shutil.copytree(ROOT / "pets" / slug, home / "pets" / slug, dirs_exist_ok=True)
+    for old in OLD_SKINS:
+        (home / "skins" / f"{old}.yaml").unlink(missing_ok=True)
+    for d in sorted((ROOT / "pets").iterdir()):
+        if d.is_dir():
+            shutil.copytree(d, home / "pets" / d.name, dirs_exist_ok=True)
     subprocess.run(["hermes", "config", "set", "display.skin", skin_name], check=False)
-    subprocess.run(["hermes", "pets", "select", "creeper-buddy"], check=False)
+    subprocess.run(["hermes", "pets", "select", pet], check=False)
     print(f"installed into {home}")
 
 

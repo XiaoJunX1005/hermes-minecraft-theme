@@ -9,7 +9,7 @@
 
 :root {
   --mc-font: {{font_stack}};
-  --mc-grass: #7bd34a;
+  --mc-grass: {{accent}};
   --mc-grass-dark: #3f7d23;
   --mc-gold: #ffaa00;
   --mc-aqua: #55ffff;
@@ -54,6 +54,7 @@ body,
   background-size: 640px 72px, 960px 108px, 420px 260px;
   background-position: 0 18px, 200px 70px, 0 0;
   animation: mc-sky 160s linear infinite;
+  background-color: {{sky_tint}};
 }
 @keyframes mc-sky {
   from { background-position: 0 18px, 200px 70px, 0 0; }
@@ -159,23 +160,23 @@ body:has([data-slot="aui_response-loading"]) [data-slot="composer-surface"]::aft
   to   { background-size: 100% 100%, 100% 100%, 100% 100%; }
 }
 
-/* ---------- empty chat: a spinning, floating grass block ------------------ */
+/* ---------- empty chat: a floating sky island that slowly turns ---------- */
 [data-slot="aui_intro"]::before {
   content: "";
   display: block;
-  width: 112px;
-  height: 112px;
-  margin: 0 auto 18px;
-  background-image: url("{{png:spin}}");
-  background-size: calc(112px * {{spin_frames}}) 112px;
+  width: 144px;
+  height: 144px;
+  margin: 0 auto 10px;
+  background-image: url("{{png:island}}");
+  background-size: calc(144px * {{island_frames}}) 144px;
   background-repeat: no-repeat;
   image-rendering: pixelated;
-  animation: mc-spin {{spin_duration}} steps({{spin_frames}}) infinite, mc-float 3.2s ease-in-out infinite;
-  filter: drop-shadow(0 14px 6px rgba(0, 0, 0, 0.45));
+  animation: mc-turn {{island_duration}} steps({{island_frames}}) infinite, mc-float 3.6s ease-in-out infinite;
+  filter: drop-shadow(0 16px 14px {{hero_glow}});
 }
-@keyframes mc-spin {
+@keyframes mc-turn {
   from { background-position: 0 0; }
-  to   { background-position: calc(-112px * {{spin_frames}}) 0; }
+  to   { background-position: calc(-144px * {{island_frames}}) 0; }
 }
 @keyframes mc-float {
   0%, 100% { translate: 0 0; }
@@ -185,7 +186,7 @@ body:has([data-slot="aui_response-loading"]) [data-slot="composer-surface"]::aft
 
 /* splash text, like the title screen */
 [data-slot="aui_intro"]::after {
-  content: "Also try Minecraft!";
+  content: "{{splash}}";
   display: block;
   margin-top: 14px;
   color: var(--mc-yellow);

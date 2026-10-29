@@ -101,23 +101,25 @@ GRASS_HD = ["#4f8f37", "#5c9e3e", "#69ad46", "#77bb4f", "#86c75b", "#98d36a"]
 DIRT_HD = ["#5b3d27", "#6a4830", "#79543a", "#876045", "#966d50"]
 
 
-def grass_top_hd(n: int = 32, seed: int = 31) -> list[list[str]]:
+def grass_top_hd(n: int = 32, seed: int = 31, pal: list[str] | None = None) -> list[list[str]]:
+    pal = pal or GRASS_HD
     rng = random.Random(seed)
     f = fbm(n, n, seed)
-    tex = [[_ramp(GRASS_HD, 0.15 + f[y][x] * 0.75) for x in range(n)] for y in range(n)]
+    tex = [[_ramp(pal, 0.15 + f[y][x] * 0.75) for x in range(n)] for y in range(n)]
     for _ in range(n * 2):  # short bright blades
         x, y = rng.randrange(n), rng.randrange(n - 1)
-        tex[y][x] = GRASS_HD[-1]
-        tex[y + 1][x] = GRASS_HD[-2]
+        tex[y][x] = pal[-1]
+        tex[y + 1][x] = pal[-2]
     for _ in range(n // 2):  # tiny shadow specks
-        tex[rng.randrange(n)][rng.randrange(n)] = GRASS_HD[0]
+        tex[rng.randrange(n)][rng.randrange(n)] = pal[0]
     return tex
 
 
-def dirt_hd(n: int = 32, seed: int = 41, pebbles: bool = True) -> list[list[str]]:
+def dirt_hd(n: int = 32, seed: int = 41, pebbles: bool = True, pal: list[str] | None = None) -> list[list[str]]:
+    pal = pal or DIRT_HD
     rng = random.Random(seed)
     f = fbm(n, n, seed)
-    tex = [[_ramp(DIRT_HD, 0.1 + f[y][x] * 0.8) for x in range(n)] for y in range(n)]
+    tex = [[_ramp(pal, 0.1 + f[y][x] * 0.8) for x in range(n)] for y in range(n)]
     if pebbles:
         for _ in range(n // 4):
             x, y = rng.randrange(n - 2), rng.randrange(n - 2)

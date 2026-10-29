@@ -7,17 +7,18 @@ $home_ = if ($env:HERMES_HOME) { $env:HERMES_HOME }
          elseif (Test-Path "$env:LOCALAPPDATA\hermes") { "$env:LOCALAPPDATA\hermes" }
          else { Join-Path $HOME '.hermes' }
 
-New-Item -ItemType Directory -Force "$home_\skins", "$home_\pets\creeper-buddy", "$home_\pets\lantern-buddy" | Out-Null
-foreach ($s in 'minecraft','minecraft-cubic','minecraft-mixed','minecraft-pixelify') {
+New-Item -ItemType Directory -Force "$home_\skins" | Out-Null
+foreach ($s in 'minecraft','minecraft-nether','minecraft-end','minecraft-snow','minecraft-cherry') {
     Invoke-WebRequest "$repo/skins/$s.yaml" -OutFile "$home_\skins\$s.yaml"
 }
-foreach ($p in 'creeper-buddy','lantern-buddy') {
+foreach ($p in 'creeper-blocky','creeper-carved','creeper-tall','creeper-buddy','lantern-buddy') {
+    New-Item -ItemType Directory -Force "$home_\pets\$p" | Out-Null
     Invoke-WebRequest "$repo/pets/$p/pet.json" -OutFile "$home_\pets\$p\pet.json"
     Invoke-WebRequest "$repo/pets/$p/spritesheet.png" -OutFile "$home_\pets\$p\spritesheet.png"
 }
 if (Get-Command hermes -ErrorAction SilentlyContinue) {
     hermes config set display.skin minecraft
-    hermes pets select creeper-buddy
+    hermes pets select creeper-blocky
     Write-Host "`n⛏  Minecraft theme applied!  Revert: hermes config set display.skin default" -ForegroundColor Green
 } else {
     Write-Host "Files installed to $home_. Run: hermes config set display.skin minecraft"

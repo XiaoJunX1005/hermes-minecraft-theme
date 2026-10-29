@@ -19,8 +19,6 @@ from PIL import Image, ImageDraw
 from pixels import fbm
 
 ROOT = Path(__file__).resolve().parent.parent
-SLUG = "creeper-buddy"
-PET_DIR = ROOT / "pets" / SLUG
 DOCS = ROOT / "docs"
 
 FRAME_W, FRAME_H = 192, 208
@@ -76,8 +74,36 @@ class Canvas:
         return img
 
 
-def block(cv: Canvas, x0: int, y0: int, w: int, h: int, round_: int = 1, shade: float = 0.0) -> None:
-    """Rounded-corner block with top-left light and bottom-right shade."""
+# --- style variants: same 9 animations, different head / face / proportions ---------
+STYLES = {
+    "creeper-blocky": dict(name="Creeper Blocky", desc="方正 Q 版：方頭方身、方眼、經典嘴，有光影",
+                           head=(10, 4, 28, 24), round=1, bevel=0, body=(15, 27, 18, 14),
+                           feet=((12, 39, 7, 6), (29, 39, 7, 6)), eyes="square", eye_x=(4, 18), eye_y=6,
+                           eye_size=(6, 5), shine=1, mouth=("classic8", 10, 13), blush=False),
+    "creeper-carved": dict(name="Creeper Carved", desc="稜角立體：直角方塊、亮頂面暗側面、雕刻感",
+                           head=(9, 5, 30, 22), round=0, bevel=5, body=(14, 27, 20, 13),
+                           feet=((11, 39, 8, 6), (29, 39, 8, 6)), eyes="square", eye_x=(4, 19), eye_y=8,
+                           eye_size=(7, 4), shine=0, mouth=("classic8", 11, 13), blush=False, inset=True),
+    "creeper-tall": dict(name="Creeper Classic", desc="接近原版比例：頭較小、身體較長、四腳外張",
+                         head=(12, 4, 24, 20), round=1, bevel=2, body=(16, 23, 16, 18),
+                         feet=((11, 40, 8, 5), (29, 40, 8, 5)), eyes="square", eye_x=(4, 15), eye_y=6,
+                         eye_size=(5, 4), shine=0, mouth=("classic6", 9, 11), blush=False),
+    "creeper-buddy": dict(name="Creeper Buddy", desc="圓潤 Q 版（上一版）：圓眼、亮點、腮紅",
+                          head=(10, 4, 28, 24), round=3, bevel=0, body=(15, 27, 18, 14),
+                          feet=((12, 39, 7, 6), (29, 39, 7, 6)), eyes="round", eye_x=(5, 18), eye_y=7,
+                          eye_size=(5, 5), shine=3, mouth=("chibi", 11, 14), blush=True),
+}
+DEFAULT = "creeper-blocky"
+STYLE = STYLES[DEFAULT]
+
+
+def use(slug: str) -> None:
+    global STYLE
+    STYLE = STYLES[slug]
+
+
+def block(cv: Canvas, x0: int, y0: int, w: int, h: int, round_: int = 1, shade: float = 0.0, bevel: int = 0) -> None:
+    """Block with top-left light; `bevel` adds a lit top face and a dark right side."""
     for y in range(h):
         for x in range(w):
             cx = min(x, w - 1 - x)
@@ -89,43 +115,68 @@ def block(cv: Canvas, x0: int, y0: int, w: int, h: int, round_: int = 1, shade: 
                 light += 0.12
             if x == w - 1 or y == h - 1:
                 light -= 0.14
+            if bevel:
+                if y < bevel:
+                    light += 0.24
+                elif x >= w - bevel:
+                    light -= 0.2
             cv.put(x0 + x, y0 + y, skin(x0 + x, y0 + y, light))
 
 
+MOUTHS = {
+    "chibi": ["..XX..", ".XXXX.", "XXXXXX", "XX..XX"],
+    "classic8": ["..XXXX..", "..XXXX..", "XXXXXXXX", "XXXXXXXX", "XX....XX", "XX....XX"],
+    "classic6": ["..XX..", ".XXXX.", ".XXXX.", ".X..X."],
+}
+
+
 def face(cv: Canvas, ox: int, oy: int, eyes: str) -> None:
-    """Face in head-local coords (head is 28x24 at ox, oy)."""
-    for ex in (ox + 5, ox + 18):
+    st = STYLE
+    ew, eh = st["eye_size"]
+    ey = oy + st["eye_y"]
+    for exo in st["eye_x"]:
+        ex = ox + exo
         if eyes == "open":
-            for y in range(5):
-                for x in range(5):
-                    if (x in (0, 4)) and (y in (0, 4)):
+            for y in range(eh):
+                for x in range(ew):
+                    if st["eyes"] == "round" and x in (0, ew - 1) and y in (0, eh - 1):
                         continue
-                    cv.put(ex + x, oy + 7 + y, FACE)
-            cv.put(ex + 1, oy + 8, SHINE)
-            cv.put(ex + 2, oy + 8, SHINE)
-            cv.put(ex + 1, oy + 9, SHINE)
+                    cv.put(ex + x, ey + y, FACE)
+            for k, (sx, sy) in enumerate(((1, 1), (2, 1), (1, 2))):
+                if k < st["shine"]:
+                    cv.put(ex + sx, ey + sy, SHINE)
         elif eyes == "blink":
-            for x in range(5):
-                cv.put(ex + x, oy + 10, FACE)
+            for x in range(ew):
+                cv.put(ex + x, ey + eh - 2, FACE)
         elif eyes == "happy":
-            for x, y in ((0, 11), (1, 10), (2, 9), (3, 10), (4, 11)):
-                cv.put(ex + x, oy + y, FACE)
+            for x in range(ew):
+                cv.put(ex + x, ey + eh - 1 - min(x, ew - 1 - x, 2), FACE)
         elif eyes == "x":
-            for i in range(5):
-                cv.put(ex + i, oy + 7 + i, FACE)
-                cv.put(ex + 4 - i, oy + 7 + i, FACE)
+            n = min(ew, eh)
+            for k in range(n):
+                cv.put(ex + k, ey + k, FACE)
+                cv.put(ex + n - 1 - k, ey + k, FACE)
         elif eyes == "down":
-            for y in range(3):
-                for x in range(5):
-                    if not ((x in (0, 4)) and y == 2):
-                        cv.put(ex + x, oy + 9 + y, FACE)
-    # small, rounded mouth (chibi version of the classic shape)
-    mouth = ["..XX..", ".XXXX.", "XXXXXX", "XX..XX"] if eyes != "x" else ["XXXXXX"]
-    for y, row in enumerate(mouth):
+            for y in range(eh // 2, eh):
+                for x in range(ew):
+                    cv.put(ex + x, ey + y, FACE)
+    kind, mx, my = st["mouth"]
+    rows = MOUTHS[kind] if eyes != "x" else ["X" * len(MOUTHS[kind][0])]
+    if eyes == "x":
+        my += 2
+    for y, row in enumerate(rows):
         for x, c in enumerate(row):
             if c == "X":
-                cv.put(ox + 11 + x, oy + 14 + y, FACE)
-    if eyes not in ("x",):
+                cv.put(ox + mx + x, oy + my + y, FACE)
+    if st.get("inset") and eyes == "open":
+        lip = (176, 226, 140, 255)
+        for exo in st["eye_x"]:
+            for x in range(ew):
+                cv.put(ox + exo + x, ey + eh, lip)
+        for x, c in enumerate(rows[-1]):
+            if c == "X":
+                cv.put(ox + mx + x, oy + my + len(rows), lip)
+    if st["blush"] and eyes != "x":
         for bx in (ox + 3, ox + 23):
             cv.put(bx, oy + 14, BLUSH)
             cv.put(bx + 1, oy + 14, BLUSH)
@@ -133,12 +184,16 @@ def face(cv: Canvas, ox: int, oy: int, eyes: str) -> None:
 
 def creeper(cv: Canvas, dy: int = 0, dx: int = 0, face_dx: int = 0, eyes: str = "open",
             leg_l: int = 0, leg_r: int = 0, legs_follow: bool = False) -> None:
+    st = STYLE
     ly = dy if legs_follow else 0
-    for fx0, lo in ((12, leg_l), (29, leg_r)):
-        block(cv, fx0 + dx, 39 + ly + lo, 7, 6, round_=1, shade=0.12)
-    block(cv, 15 + dx, 27 + dy, 18, 14, round_=1, shade=0.05)
-    block(cv, 10 + dx, 4 + dy, 28, 24, round_=3)
-    face(cv, 10 + dx + face_dx, 4 + dy, eyes)
+    small_round = min(1, st["round"])
+    for (fx0, fy0, fw, fh), lo in zip(st["feet"], (leg_l, leg_r)):
+        block(cv, fx0 + dx, fy0 + ly + lo, fw, fh, round_=small_round, shade=0.12, bevel=st["bevel"] // 2)
+    bx, by, bw, bh = st["body"]
+    block(cv, bx + dx, by + dy, bw, bh, round_=small_round, shade=0.05, bevel=st["bevel"] // 2)
+    hx, hy, hw, hh = st["head"]
+    block(cv, hx + dx, hy + dy, hw, hh, round_=st["round"], bevel=st["bevel"])
+    face(cv, hx + dx + face_dx, hy + dy, eyes)
 
 
 def shadow(cv: Canvas, lift: int) -> None:
@@ -170,7 +225,7 @@ def puff(cv: Canvas, ox: int, oy: int, size: int, alpha: int) -> None:
 
 
 def bubble(cv: Canvas, dots: int) -> None:
-    x0, y0, w, h = 34, 0, 14, 8
+    x0, y0, w, h = 40, 0, 8, 7
     for y in range(h):
         for x in range(w):
             if x in (0, w - 1) and y in (0, h - 1):
@@ -180,9 +235,8 @@ def bubble(cv: Canvas, dots: int) -> None:
     for i, (x, y) in enumerate(((3, h), (2, h + 1))):
         cv.put(x0 + x, y0 + y, (24, 24, 24, 255), fx=True)
     for i in range(dots):
-        for xx in (0, 1):
-            for yy in (0, 1):
-                cv.put(x0 + 3 + i * 3 + xx, y0 + 4 + yy, (60, 60, 60, 255), fx=True)
+        for yy in (0, 1):
+            cv.put(x0 + 1 + i * 2, y0 + 2 + yy, (60, 60, 60, 255), fx=True)
 
 
 def book(cv: Canvas, ox: int, oy: int, f: int) -> None:
@@ -266,47 +320,65 @@ def frame(state: str, f: int) -> Image.Image:
     return cv.render(flash=flash, flip=flip)
 
 
-def head_pixels() -> dict[tuple[int, int], tuple]:
+def head_pixels(slug: str = DEFAULT) -> dict[tuple[int, int], tuple]:
     """Logical pixels of the idle pose (used for the CLI banner hero)."""
+    prev = STYLE
+    use(slug)
     cv = Canvas()
     creeper(cv)
     cv.outline()
+    use(next(k for k, v in STYLES.items() if v is prev))
     return cv.px
 
 
-def main() -> None:
-    PET_DIR.mkdir(parents=True, exist_ok=True)
-    DOCS.mkdir(parents=True, exist_ok=True)
+def build_variant(slug: str) -> dict[str, list[Image.Image]]:
+    use(slug)
+    pet_dir = ROOT / "pets" / slug
+    pet_dir.mkdir(parents=True, exist_ok=True)
     sheet = Image.new("RGBA", (FRAME_W * COLS, FRAME_H * ROWS), (0, 0, 0, 0))
     frames = {s: [frame(s, f) for f in range(FRAMES)] for s in STATES}
-    for r, s in enumerate(STATES):
+    for r, st in enumerate(STATES):
         for c in range(COLS):
-            sheet.paste(frames[s][c % FRAMES], (c * FRAME_W, r * FRAME_H))
-    sheet.save(PET_DIR / "spritesheet.png", optimize=True)
-    (PET_DIR / "pet.json").write_text(json.dumps({
-        "id": SLUG,
-        "displayName": "Creeper Buddy",
-        "description": "A chibi pixel creeper that hops, reads and (almost) explodes alongside Hermes.",
+            sheet.paste(frames[st][c % FRAMES], (c * FRAME_W, r * FRAME_H))
+    sheet.save(pet_dir / "spritesheet.png", optimize=True)
+    (pet_dir / "pet.json").write_text(json.dumps({
+        "id": slug,
+        "displayName": STYLES[slug]["name"],
+        "description": "A pixel creeper that hops, reads and (almost) explodes alongside Hermes.",
         "spritesheetPath": "spritesheet.png",
     }, indent=2) + "\n", encoding="utf-8")
+    return frames
 
-    show = ["idle", "running-right", "running", "waving", "jumping", "failed", "waiting", "review"]
+
+def main() -> None:
+    DOCS.mkdir(parents=True, exist_ok=True)
+    all_frames = {slug: build_variant(slug) for slug in STYLES}
+    use(DEFAULT)
+
+    # comparison: one row per variant, animated through the main states
+    show = ["idle", "running-right", "waving", "jumping", "failed", "waiting", "review"]
     cw, ch = FRAME_W // 2, FRAME_H // 2
+    label_w = 150
     gif = []
     for f in range(FRAMES):
-        canvas = Image.new("RGBA", (cw * len(show), ch + 22), (24, 26, 32, 255))
+        canvas = Image.new("RGBA", (label_w + cw * len(show), (ch + 6) * len(STYLES) + 20), (24, 26, 32, 255))
         d = ImageDraw.Draw(canvas)
-        for i, s in enumerate(show):
-            canvas.alpha_composite(frames[s][f].resize((cw, ch), Image.NEAREST), (i * cw, 0))
-            d.text((i * cw + 6, ch + 5), s, fill=(200, 200, 200, 255))
+        for i, st in enumerate(show):
+            d.text((label_w + i * cw + 6, 4), st, fill=(150, 150, 150, 255))
+        for r, slug in enumerate(STYLES):
+            y0 = 20 + r * (ch + 6)
+            d.text((8, y0 + ch // 2 - 6), slug, fill=(123, 211, 74, 255))
+            for i, st in enumerate(show):
+                canvas.alpha_composite(all_frames[slug][st][f].resize((cw, ch), Image.NEAREST), (label_w + i * cw, y0))
         gif.append(canvas.convert("RGB"))
-    strip = Image.new("RGB", (gif[0].width, gif[0].height * 3))
-    for k, i in enumerate((0, 2, 4)):
-        strip.paste(gif[i], (0, gif[0].height * k))
-    pal = strip.quantize(colors=160, method=Image.Quantize.MEDIANCUT)
-    gif = [im.quantize(palette=pal, dither=Image.Dither.NONE) for im in gif]
-    gif[0].save(DOCS / "pet-preview.gif", save_all=True, append_images=gif[1:], duration=1100 // FRAMES, loop=0)
-    print("wrote", PET_DIR / "spritesheet.png", sheet.size)
+    gif[0].save(DOCS / "creepers.png")
+    strip = Image.new("RGB", (gif[0].width, gif[0].height * 2))
+    strip.paste(gif[0], (0, 0))
+    strip.paste(gif[3], (0, gif[0].height))
+    pal = strip.quantize(colors=200, method=Image.Quantize.MEDIANCUT)
+    q = [im.quantize(palette=pal, dither=Image.Dither.NONE) for im in gif]
+    q[0].save(DOCS / "creepers.gif", save_all=True, append_images=q[1:], duration=1100 // FRAMES, loop=0)
+    print("wrote", ", ".join(f"pets/{k}" for k in STYLES), "+ docs/creepers.gif")
 
 
 if __name__ == "__main__":
