@@ -278,6 +278,207 @@ DRAW = {"think": think, "write": write, "shell": furnace, "web": web, "browse": 
         "error": lambda f: tnt(f % 4), "done": done, "tool": tool}
 
 
+
+# ---- workbench stations (16x16, 8 frames) ------------------------------------------
+BENCH_ROWS = ["lectern-idle", "lectern-think", "lectern-read", "lectern-write",
+              "forge-idle", "forge-edit", "forge-shell", "forge-tool",
+              "map-idle", "map-web", "map-browse", "map-search", "map-vision",
+              "store-idle", "store-memory", "store-wait", "store-agent",
+              "fx-done", "fx-error"]
+WOOD, WOOD_D, WOOD_L = (150, 100, 50, 255), (110, 72, 36, 255), (186, 132, 72, 255)
+PAGE, PAGE2, LINE = (236, 226, 200, 255), (246, 238, 214, 255), (150, 130, 120, 255)
+
+
+def lectern(mode: str, f: int) -> Image.Image:
+    """Lectern with an open book: think (glyphs), read (page flip), write (quill)."""
+    g = G()
+    g.rect(3, 14, 10, 2, WOOD_D)
+    g.rect(7, 9, 2, 5, WOOD)
+    g.rect(2, 7, 12, 2, WOOD_L)
+    g.rect(2, 8, 12, 1, WOOD)
+    g.rect(3, 4, 5, 3, PAGE)
+    g.rect(8, 4, 5, 3, PAGE2)
+    g.rect(7, 4, 1, 3, (120, 74, 44, 255))
+    for x in (4, 5, 6, 9, 10, 11):
+        g.p(x, 5, LINE)
+    if mode == "think":
+        for k, x in enumerate((3, 8, 12)):
+            y = 3 - (f + k * 3) % 5
+            if y >= 0:
+                g.p(x, y, (200, 130, 255, 255))
+    elif mode == "read":
+        x = 12 - f
+        if 3 <= x <= 12:
+            g.rect(x, 3, 1, 4, (255, 252, 236, 255))
+    elif mode == "write":
+        n = f % 4 + 1
+        g.rect(8, 6, n, 1, (60, 40, 30, 255))
+        for k in range(1, 5):
+            g.p(8 + n + k // 2, 6 - k, (250, 250, 250, 255))
+    g.outline()
+    return g.im
+
+
+def forge(mode: str, f: int) -> Image.Image:
+    """Anvil (left) + furnace (right): edit hammers, shell fires the furnace, tool does a bit of both."""
+    g = G()
+    g.rect(1, 13, 6, 2, (56, 56, 62, 255))
+    g.rect(2, 11, 4, 2, (72, 72, 80, 255))
+    g.rect(0, 9, 8, 2, (100, 100, 108, 255))
+    g.rect(0, 9, 8, 1, (150, 150, 160, 255))
+    g.rect(9, 6, 7, 9, (120, 120, 126, 255))
+    g.rect(9, 6, 7, 1, (150, 150, 156, 255))
+    g.rect(10, 10, 5, 4, (30, 22, 18, 255))
+    flame = [(255, 210, 80, 255), (255, 150, 40, 255), (240, 90, 30, 255)]
+    if mode == "shell":
+        rng = random.Random(f)
+        for x in range(10, 15):
+            for k in range(rng.randint(1, 4)):
+                g.p(x, 13 - k, flame[min(2, k)])
+        if mode == "shell":
+            g.p(12 + f % 2, 4 - f % 3, (170, 170, 176, 220))
+    else:
+        g.p(12, 13, (160, 60, 30, 255))
+    if mode == "edit":
+        hy = [0, 1, 2, 3, 3, 2, 1, 0][f]
+        g.rect(1, 2 + hy, 4, 2, (172, 172, 184, 255))
+        g.rect(4, 4 + hy, 1, 3, WOOD)
+        if f in (3, 4):
+            rng = random.Random(f + 9)
+            for _ in range(5):
+                g.p(rng.randrange(0, 9), rng.randrange(4, 9), rng.choice(flame[:2]))
+    elif mode == "tool":
+        sw = [0, 1, 2, 2, 1, 0, 0, 0][f]
+        for k in range(5):
+            g.p(1 + k + sw, 7 - k, WOOD)
+        for k in range(-2, 3):
+            g.p(5 + sw + k, 1 + abs(k) // 2 + sw // 2, (120, 230, 230, 255))
+        if f in (2, 3):
+            for x, y in ((2, 7), (6, 6), (4, 5)):
+                g.p(x, y, (200, 200, 206, 255))
+    g.outline()
+    return g.im
+
+
+def maptable(mode: str, f: int) -> Image.Image:
+    """Cartography table with a map and a compass (web spins it, browse draws a route,
+    search sweeps a light over the map, vision swaps the compass for a spyglass)."""
+    g = G()
+    g.rect(1, 9, 14, 2, WOOD_L)
+    g.rect(1, 10, 14, 1, WOOD)
+    g.rect(2, 11, 2, 5, WOOD_D)
+    g.rect(12, 11, 2, 5, WOOD_D)
+    g.rect(1, 6, 9, 3, (226, 206, 160, 255))
+    if mode == "idle":                                   # rolled up when nobody is using it
+        g.rect(1, 6, 9, 3, (0, 0, 0, 0))
+        g.rect(2, 7, 7, 2, (226, 206, 160, 255))
+        g.rect(2, 7, 7, 1, (200, 180, 136, 255))
+    g.p(2, 7, (118, 170, 92, 255))
+    g.p(3, 7, (118, 170, 92, 255))
+    g.p(7, 6, (90, 150, 210, 255))
+    if mode == "vision":
+        for k in range(5):
+            g.p(10 + k, 8 - k, (190, 140, 56, 255))
+        g.rect(14, 3, 2, 2, (170, 220, 255, 255))
+        if f % 4 < 2:
+            g.p(15, 3, (255, 255, 255, 255))
+    else:
+        for y in range(4, 9):
+            for x in range(10, 15):
+                d = math.hypot(x - 12, y - 6)
+                if d < 2.6:
+                    g.p(x, y, (90, 90, 98, 255) if d > 1.7 else (222, 218, 206, 255))
+        a = f * math.pi / 4 if mode == "web" else -math.pi / 2
+        for t in (1, 2):
+            g.p(round(12 + math.cos(a) * t * 0.9), round(6 + math.sin(a) * t * 0.9), (214, 40, 40, 255))
+        g.p(round(12 - math.cos(a)), round(6 - math.sin(a)), (60, 60, 72, 255))
+        g.p(12, 6, (40, 40, 48, 255))
+        if mode == "web" and f % 2 == 0:
+            g.p(12, 2, (150, 220, 255, 255))
+            g.p(9, 4, (150, 220, 255, 200))
+    if mode == "browse":
+        for k in range(min(f + 1, 7)):
+            g.p(2 + k, 8 - (k // 3), (140, 70, 40, 255))
+        if f % 2:
+            g.p(8, 6, (214, 40, 40, 255))
+    elif mode == "search":
+        g.rect(0, 2, 1, 4, WOOD)                       # torch beside the map
+        g.p(0, 1, (255, 200, 70, 255))
+        g.p(0, 0, (255, 240, 170, 255) if f % 2 else (255, 150, 40, 255))
+        x = 1 + f
+        if x <= 9:
+            g.rect(x, 6, 2 if x < 9 else 1, 3, (255, 236, 150, 255))
+    g.outline()
+    return g.im
+
+
+def storage(mode: str, f: int) -> Image.Image:
+    """Chest (left) + bell (right): memory opens the chest, wait rings the bell, agent sends a bee."""
+    g = G()
+    lift = [0, 0, 1, 2, 3, 3, 2, 1][f] if mode == "memory" else 0
+    g.rect(0, 10, 8, 6, (150, 100, 50, 255))
+    g.rect(0, 12, 8, 1, WOOD_D)
+    if lift:
+        g.rect(1, 10 - lift, 6, lift, (255, 214, 96, 255))
+    g.rect(0, 8 - lift, 8, 2, (170, 116, 60, 255))
+    g.rect(0, 8 - lift, 8, 1, (196, 140, 76, 255))
+    g.rect(3, 9 - lift, 2, 2, (210, 210, 220, 255))
+    g.rect(9, 1, 7, 1, WOOD_D)
+    g.rect(15, 1, 1, 15, WOOD_D)
+    dx = [0, 1, 0, -1][f % 4] if mode == "wait" else 0
+    g.p(12, 2, (90, 90, 90, 255))
+    g.rect(11 + dx, 3, 3, 3, (236, 190, 60, 255))
+    g.rect(10 + dx, 6, 5, 1, (200, 150, 40, 255))
+    g.p(11 + dx, 3, (255, 230, 140, 255))
+    if mode == "wait" and f % 2 == 0:
+        g.p(9, 4, (255, 240, 180, 255))
+        g.p(9, 6, (255, 240, 180, 255))
+    if mode == "agent":
+        # chunky bee (5x4) flying a loop in the open area above the chest
+        bx, by = [(1, 1), (3, 0), (5, 1), (5, 3), (3, 4), (1, 3), (0, 2), (0, 1)][f]
+        for x in range(5):
+            for y in range(1, 4):
+                g.p(bx + x, by + y, (54, 36, 22, 255) if x in (1, 3) else (246, 200, 50, 255))
+        g.p(bx + 4, by + 1, (20, 20, 24, 255))
+        wing = (230, 244, 255, 255)
+        if f % 2 == 0:
+            g.rect(bx + 1, by - 1, 3, 2, wing)
+        else:
+            g.rect(bx + 1, by, 3, 1, wing)
+    g.outline()
+    return g.im
+
+
+def fx(mode: str, f: int) -> Image.Image:
+    """Overlay drawn over the current station: done = XP orbs rising, error = smoke."""
+    g = G()
+    if mode == "done":
+        for k, x in enumerate((3, 8, 12)):
+            y = 13 - (f * 2 + k * 5) % 13
+            g.rect(x, y, 2, 2, (160, 236, 64, 255))
+            g.p(x, y, (240, 255, 150, 255))
+    else:
+        for k, x in enumerate((4, 9)):
+            y = 10 - (f + k * 3) % 8
+            g.rect(x, y, 3, 2, (120, 120, 126, 210))
+            g.p(x + 1, y - 1, (150, 150, 156, 190))
+        if f % 4 == 0:
+            g.p(7, 12, (230, 70, 50, 255))
+    return g.im
+
+
+BENCH_DRAW = {"lectern": lectern, "forge": forge, "map": maptable, "store": storage, "fx": fx}
+
+
+def bench_atlas() -> Image.Image:
+    img = Image.new("RGBA", (S * F, S * len(BENCH_ROWS)), (0, 0, 0, 0))
+    for r, name in enumerate(BENCH_ROWS):
+        station, mode = name.split("-", 1)
+        for c in range(F):
+            img.paste(BENCH_DRAW[station](mode, c), (c * S, r * S))
+    return img
+
+
 def atlas() -> Image.Image:
     img = Image.new("RGBA", (S * F, S * len(KINDS)), (0, 0, 0, 0))
     for r, (kind, _) in enumerate(KINDS):
@@ -325,7 +526,12 @@ def main() -> None:
     preview(a)
     src = (ROOT / "src" / "activity-plugin.js").read_text(encoding="utf-8")
     kinds = json.dumps([{"kind": k, "label": label} for k, label in KINDS], ensure_ascii=False)
+    b = bench_atlas()
+    big = Image.new("RGBA", b.size, (24, 26, 32, 255))
+    big.alpha_composite(b)
+    big.resize((b.width * 5, b.height * 5), Image.NEAREST).save(ROOT / "docs" / "_bench-atlas.png")
     out = (src.replace("__ATLAS__", data_uri(a)).replace("__KINDS__", kinds)
+              .replace("__BENCH__", data_uri(b)).replace("__BENCH_ROWS__", json.dumps(BENCH_ROWS))
               .replace("__GENERATED__", "GENERATED by tools/make_activity.py from src/activity-plugin.js — edit that file."))
     dest = ROOT / "desktop-plugins" / "minecraft-activity" / "plugin.js"
     dest.parent.mkdir(parents=True, exist_ok=True)
