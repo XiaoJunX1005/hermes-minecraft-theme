@@ -14,7 +14,7 @@
 
 - **5 個世界主題**：主世界、地獄、終界、雪原、櫻花林。每個世界有自己的漂浮空島、主色、星空顏色、首頁標語與底部地表條。
 - **像素字型**：使用 [Zpix](https://github.com/SolidZORO/zpix-pixel-font)，中文、英文、數字都是點陣字。字型從網路載入，連不上時會改用微軟正黑體。
-- **思考中圖示**：8 種會動的方塊與生物，不同回合會顯示不同圖示。
+- **活動圖示**：依 Hermes 正在做的事（思考、讀檔、執行指令、搜尋網路、等你回應…）顯示對應的動畫圖示與文字。
 - **10 隻寵物**：4 種苦力怕、豬、雞、史萊姆、蜜蜂、終界使者，以及原創的小燈籠。每隻都有 9 種動作（待機、跑步、開心、跳躍、失敗、等待、閱讀等）。
 - **其他介面細節**：石頭質感按鈕、經驗值條（回覆中顯示）、方塊雲、附魔光澤的訊息泡泡。
 
@@ -36,7 +36,7 @@ curl -fsSL https://raw.githubusercontent.com/XiaoJunX1005/hermes-minecraft-theme
 
 安裝程式會：
 
-1. 把所有主題與寵物先下載到暫存資料夾，全部成功後才更新到 Hermes 的資料夾（下載失敗不會動到現有檔案）。
+1. 把所有主題、寵物與活動圖示插件先下載到暫存資料夾，全部成功後才更新到 Hermes 的資料夾（下載失敗不會動到現有檔案）。
 2. 第一次安裝時套用 `minecraft` 主題與 `creeper-blocky` 寵物。
 3. 之後再執行就是**更新**，會保留你目前選的世界與寵物。
 
@@ -89,17 +89,41 @@ hermes pets off          # 關閉寵物
 | `mc-enderman` | 終界使者 |
 | `lantern-buddy` | 原創小燈籠 |
 
-## 思考中圖示
+## 活動圖示
 
-![thinking](docs/thinking.gif)
+![activity](docs/activity.gif)
 
-草方塊、鑽石礦、熔爐、TNT、挖掘中的石頭、史萊姆、蜜蜂、雞，依對話中的訊息順序輪流出現，不是隨機，也不是依 Hermes 正在做的事決定。
+由隨附的桌面版插件 `minecraft-activity` 提供。它讀取桌面版收到的工作事件（哪個工具開始、結束，是否在等你核准），不讀取對話內容。圖示會出現在兩個地方：
+
+- **底部狀態列**：圖示加上文字，例如「讀取檔案」；同時跑多個工具時會顯示「×2」。
+- **對話中的「思考中」那一列**：換成對應的圖示。
+
+| 圖示 | 顯示時機 |
+|---|---|
+| 附魔書 | 思考中（還沒開始回答） |
+| 羽毛筆 | 正在寫回覆 |
+| 熔爐 | 執行終端機指令、跑程式 |
+| 指南針 | 搜尋網路 |
+| 藏寶圖 | 讀取網頁、操作瀏覽器 |
+| 翻頁的書 | 讀取檔案、技能 |
+| 火把 | 搜尋專案檔案 |
+| 鐵砧 | 新增或修改檔案 |
+| 望遠鏡 | 看圖、看畫面 |
+| 寶箱 | 記憶、待辦清單、排程 |
+| 蜜蜂 | 派出子代理 |
+| 沙漏 | 等你核准或回答問題 |
+| TNT | 出錯（顯示 3 秒） |
+| 經驗球 | 完成（顯示 1.5 秒） |
+| 鎬子 | 其他工具（例如 MCP 工具） |
+
+只有套用 `minecraft` 系列主題時才會顯示。沒有安裝插件時，「思考中」那一列會改用主題內建的 8 種圖示依訊息順序輪流顯示。
 
 ## 用另一台電腦連線使用
 
 如果筆電是透過桌面版連到桌電的 Hermes：
 
 - 畫面的配色與動畫由**桌電**提供。
+- **活動圖示插件是在每台電腦的桌面版裡執行的**，筆電要顯示活動圖示，需要在筆電也執行一次安裝指令。
 - 要改主題或寵物，請在**桌電**安裝或切換，然後重新開啟筆電的 Hermes 桌面版（或重新連線），讓它重新讀取清單。
 - 如果筆電重新開啟後主題有更新、寵物清單卻還是舊的，請在**筆電**也執行一次上面的安裝指令。
 
@@ -119,6 +143,7 @@ pip install pillow
 python tools/make_creeper.py      # 苦力怕 → pets/creeper-*/、docs/creepers.gif
 python tools/make_mobs.py         # 其他生物 → pets/mc-*/、docs/mobs.gif
 python tools/make_lantern.py      # 小燈籠 → pets/lantern-buddy/
+python tools/make_activity.py     # 活動圖示 → desktop-plugins/minecraft-activity/plugin.js、docs/activity.gif
 python tools/build_skin.py        # 5 個世界 → skins/*.yaml、docs/islands.gif、docs/thinking.gif
 python tools/build_skin.py --install                 # 產生並安裝到本機，保留目前的選擇
 python tools/build_skin.py --install --skin=minecraft-end --pet=mc-bee
@@ -130,7 +155,8 @@ python tools/make_preview.py && python tools/record_gif.py   # 預覽頁與 docs
 | `src/skin.base.yaml` | 配色、終端機提示文字、品牌文字 |
 | `src/desktop.css` | 桌面版樣式與動畫（`{{...}}` 由 build 依世界填入） |
 | `tools/voxel.py` | 5 種空島與渲染器 |
-| `tools/make_icons.py` | 思考中圖示 |
+| `tools/make_icons.py` | 主題內建的思考中圖示（無插件時使用） |
+| `src/activity-plugin.js` | 活動圖示插件原始碼（`make_activity.py` 會把圖嵌入並輸出到 `desktop-plugins/`） |
 | `tools/pixels.py` | 草地、泥土等材質 |
 
 Hermes 對主題內嵌 CSS 有 32 KiB 上限，目前每個世界約 30 KiB；超過時 `build_skin.py` 會直接報錯。另一版極簡風格「Voxel Lantern」保留在 git tag `voxel-lantern`。

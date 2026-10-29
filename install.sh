@@ -19,6 +19,8 @@ mkdir -p "$TMP/skins"
 for s in $SKINS; do
   curl -fsSL "$REPO/skins/$s.yaml" > "$TMP/skins/$s.yaml"
 done
+mkdir -p "$TMP/plugin"
+curl -fsSL "$REPO/desktop-plugins/minecraft-activity/plugin.js" > "$TMP/plugin/plugin.js"
 for p in $PETS; do
   mkdir -p "$TMP/pets/$p"
   curl -fsSL "$REPO/pets/$p/pet.json" > "$TMP/pets/$p/pet.json"
@@ -32,6 +34,8 @@ for p in $PETS; do
   mkdir -p "$HOME_DIR/pets/$p"
   cp "$TMP/pets/$p/pet.json" "$TMP/pets/$p/spritesheet.png" "$HOME_DIR/pets/$p/"
 done
+mkdir -p "$HOME_DIR/desktop-plugins/minecraft-activity"
+cp "$TMP/plugin/plugin.js" "$HOME_DIR/desktop-plugins/minecraft-activity/plugin.js"
 echo "Installed into $HOME_DIR"
 
 if ! command -v hermes >/dev/null 2>&1; then

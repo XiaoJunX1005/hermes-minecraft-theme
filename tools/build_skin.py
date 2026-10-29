@@ -404,6 +404,10 @@ def install(skin: Path, skin_name: str | None = None, pet: str | None = None) ->
         shutil.copy2(OUT / f"{name}.yaml", home / "skins" / f"{name}.yaml")
     for old in OLD_SKINS:
         (home / "skins" / f"{old}.yaml").unlink(missing_ok=True)
+    plug = ROOT / "desktop-plugins" / "minecraft-activity" / "plugin.js"
+    if plug.is_file():
+        (home / "desktop-plugins" / "minecraft-activity").mkdir(parents=True, exist_ok=True)
+        shutil.copy2(plug, home / "desktop-plugins" / "minecraft-activity" / "plugin.js")
     for d in sorted((ROOT / "pets").iterdir()):
         if d.is_dir():
             shutil.copytree(d, home / "pets" / d.name, dirs_exist_ok=True)
