@@ -10,6 +10,7 @@
 :root {
   --mc-font: {{font_stack}};
   --mc-grass: {{accent}};
+  --mc-world: "{{world}}";
   --mc-grass-dark: #3f7d23;
   --mc-gold: #ffaa00;
   --mc-aqua: #55ffff;

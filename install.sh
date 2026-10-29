@@ -5,6 +5,7 @@
 set -euo pipefail
 REPO="${HMT_REPO:-https://raw.githubusercontent.com/XiaoJunX1005/hermes-minecraft-theme/main}"
 SKINS="minecraft minecraft-nether minecraft-end minecraft-snow minecraft-cherry"
+PLUGINS="minecraft-activity"
 PETS="creeper-blocky creeper-carved creeper-tall creeper-buddy lantern-buddy mc-pig mc-chicken mc-slime mc-bee mc-enderman"
 
 if [ -n "${HERMES_HOME:-}" ]; then HOME_DIR="$HERMES_HOME"
@@ -19,8 +20,10 @@ mkdir -p "$TMP/skins"
 for s in $SKINS; do
   curl -fsSL "$REPO/skins/$s.yaml" > "$TMP/skins/$s.yaml"
 done
-mkdir -p "$TMP/plugin"
-curl -fsSL "$REPO/desktop-plugins/minecraft-activity/plugin.js" > "$TMP/plugin/plugin.js"
+for g in $PLUGINS; do
+  mkdir -p "$TMP/plugins/$g"
+  curl -fsSL "$REPO/desktop-plugins/$g/plugin.js" > "$TMP/plugins/$g/plugin.js"
+done
 for p in $PETS; do
   mkdir -p "$TMP/pets/$p"
   curl -fsSL "$REPO/pets/$p/pet.json" > "$TMP/pets/$p/pet.json"
@@ -34,8 +37,11 @@ for p in $PETS; do
   mkdir -p "$HOME_DIR/pets/$p"
   cp "$TMP/pets/$p/pet.json" "$TMP/pets/$p/spritesheet.png" "$HOME_DIR/pets/$p/"
 done
-mkdir -p "$HOME_DIR/desktop-plugins/minecraft-activity"
-cp "$TMP/plugin/plugin.js" "$HOME_DIR/desktop-plugins/minecraft-activity/plugin.js"
+rm -rf "$HOME_DIR/desktop-plugins/minecraft-ocean" "$HOME_DIR/skins/minecraft-ocean.yaml"
+for g in $PLUGINS; do
+  mkdir -p "$HOME_DIR/desktop-plugins/$g"
+  cp "$TMP/plugins/$g/plugin.js" "$HOME_DIR/desktop-plugins/$g/plugin.js"
+done
 echo "Installed into $HOME_DIR"
 
 if ! command -v hermes >/dev/null 2>&1; then

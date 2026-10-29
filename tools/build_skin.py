@@ -273,7 +273,7 @@ WORLDS = {
                              star="#ffd6ea", cloud="#ffc0dc", glow="rgba(255, 150, 200, 0.32)", tint="rgba(255, 150, 200, 0.05)",
                              strip=(None, None, True)),
 }
-OLD_SKINS = ["minecraft-cubic", "minecraft-mixed", "minecraft-pixelify"]
+OLD_SKINS = ["minecraft-cubic", "minecraft-mixed", "minecraft-pixelify", "minecraft-ocean"]
 
 
 def sheet_uri(frames: list[Image.Image], colors: int) -> str:
@@ -316,7 +316,7 @@ def build() -> Path:
         for k, v in {"font_import": FONT_IMPORT, "font_stack": FONT_STACK, "think_rows": think_rows,
                      "think_h": str(len(ICONS) * THINK_S * 2), "island_frames": str(ISLAND_FRAMES),
                      "island_duration": f"{ISLAND_FRAMES * 0.2:.1f}s", "splash": w["splash"],
-                     "hero_glow": w["glow"], "sky_tint": w["tint"], "accent": w["accent"]}.items():
+                     "hero_glow": w["glow"], "sky_tint": w["tint"], "accent": w["accent"], "world": w["biome"]}.items():
             css = css.replace("{{" + k + "}}", v)
         used = sorted(set(re.findall(r'url\("\{\{([a-z]+:[a-z_]+)\}\}"\)', css)))
         for key in used:
@@ -404,10 +404,10 @@ def install(skin: Path, skin_name: str | None = None, pet: str | None = None) ->
         shutil.copy2(OUT / f"{name}.yaml", home / "skins" / f"{name}.yaml")
     for old in OLD_SKINS:
         (home / "skins" / f"{old}.yaml").unlink(missing_ok=True)
-    plug = ROOT / "desktop-plugins" / "minecraft-activity" / "plugin.js"
-    if plug.is_file():
-        (home / "desktop-plugins" / "minecraft-activity").mkdir(parents=True, exist_ok=True)
-        shutil.copy2(plug, home / "desktop-plugins" / "minecraft-activity" / "plugin.js")
+    for plug in sorted((ROOT / "desktop-plugins").glob("*/plugin.js")):
+        dest = home / "desktop-plugins" / plug.parent.name
+        dest.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(plug, dest / "plugin.js")
     for d in sorted((ROOT / "pets").iterdir()):
         if d.is_dir():
             shutil.copytree(d, home / "pets" / d.name, dirs_exist_ok=True)

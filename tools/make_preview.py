@@ -14,7 +14,9 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 def skin_css() -> str:
-    text = (ROOT / "skins" / "minecraft.yaml").read_text(encoding="utf-8")
+    import sys
+    skin = sys.argv[1] if len(sys.argv) > 1 else "minecraft"
+    text = (ROOT / "skins" / f"{skin}.yaml").read_text(encoding="utf-8")
     m = re.search(r"^customCSS: \|2?-\n((?:  .*\n?)+)", text, re.M)
     return "\n".join(line[2:] for line in m.group(1).splitlines())
 
@@ -76,7 +78,8 @@ document.fonts.ready.then(function(){seek();requestAnimationFrame(seek);});})();
 
 
 def main() -> None:
-    out = ROOT / "docs" / "preview.html"
+    import sys
+    out = ROOT / "docs" / (sys.argv[2] if len(sys.argv) > 2 else "preview.html")
     out.write_text(HTML.replace("__CSS__", skin_css()), encoding="utf-8")
     print("wrote", out)
 

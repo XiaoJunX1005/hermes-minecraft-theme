@@ -5,6 +5,7 @@
 $ErrorActionPreference = 'Stop'
 $repo = if ($env:HMT_REPO) { $env:HMT_REPO } else { 'https://raw.githubusercontent.com/XiaoJunX1005/hermes-minecraft-theme/main' }
 $skins = 'minecraft','minecraft-nether','minecraft-end','minecraft-snow','minecraft-cherry'
+$plugins = 'minecraft-activity'
 $pets = 'creeper-blocky','creeper-carved','creeper-tall','creeper-buddy','lantern-buddy','mc-pig','mc-chicken','mc-slime','mc-bee','mc-enderman'
 $hhome = if ($env:HERMES_HOME) { $env:HERMES_HOME }
          elseif (Test-Path "$env:LOCALAPPDATA\hermes") { "$env:LOCALAPPDATA\hermes" }
@@ -14,8 +15,10 @@ try {
     Write-Host 'Downloading to a temporary folder...'
     New-Item -ItemType Directory -Force "$tmp\skins" | Out-Null
     foreach ($s in $skins) { Invoke-WebRequest -UseBasicParsing "$repo/skins/$s.yaml" -OutFile "$tmp\skins\$s.yaml" }
-    New-Item -ItemType Directory -Force "$tmp\plugin" | Out-Null
-    Invoke-WebRequest -UseBasicParsing "$repo/desktop-plugins/minecraft-activity/plugin.js" -OutFile "$tmp\plugin\plugin.js"
+    foreach ($g in $plugins) {
+        New-Item -ItemType Directory -Force "$tmp\plugins\$g" | Out-Null
+        Invoke-WebRequest -UseBasicParsing "$repo/desktop-plugins/$g/plugin.js" -OutFile "$tmp\plugins\$g\plugin.js"
+    }
     foreach ($p in $pets) {
         New-Item -ItemType Directory -Force "$tmp\pets\$p" | Out-Null
         foreach ($f in 'pet.json', 'spritesheet.png') { Invoke-WebRequest -UseBasicParsing "$repo/pets/$p/$f" -OutFile "$tmp\pets\$p\$f" }
@@ -27,8 +30,11 @@ try {
         New-Item -ItemType Directory -Force "$hhome\pets\$p" | Out-Null
         foreach ($f in 'pet.json', 'spritesheet.png') { Copy-Item "$tmp\pets\$p\$f" "$hhome\pets\$p\$f" -Force }
     }
-    New-Item -ItemType Directory -Force "$hhome\desktop-plugins\minecraft-activity" | Out-Null
-    Copy-Item "$tmp\plugin\plugin.js" "$hhome\desktop-plugins\minecraft-activity\plugin.js" -Force
+    Remove-Item "$hhome\desktop-plugins\minecraft-ocean", "$hhome\skins\minecraft-ocean.yaml" -Recurse -Force -ErrorAction SilentlyContinue
+    foreach ($g in $plugins) {
+        New-Item -ItemType Directory -Force "$hhome\desktop-plugins\$g" | Out-Null
+        Copy-Item "$tmp\plugins\$g\plugin.js" "$hhome\desktop-plugins\$g\plugin.js" -Force
+    }
 } finally {
     Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
 }
