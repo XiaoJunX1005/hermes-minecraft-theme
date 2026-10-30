@@ -907,8 +907,8 @@ export class Critters {
 // ---- scene: a moving pixel background behind the chat, per world ----------------------
 // Drawn at 1/3 resolution and scaled up; screen-blended so it only lightens the dark page.
 const PX = 3
-const PROP_SHEET = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA6UAAAAsCAMAAACqqO75AAABgFBMVEUAAABGUGDYODCyIigalo5TlkG+jMg4bi7woMhQljwuxLDizpZ1u1Xn49TSeKrr8/w8eDsoWkIeRjT80uiqeFAkbnASbGh0JjqEuVHErHR+Fh54eH5uUDJToU9GLDRgljxGcy6WZKUURlBxvmTEKDQosJywIh5GoJygbrSgRlz/xGiCWjys03BgjDzEkmS+0usoFDJkkkC0Wtw8LB7DltJkcILwjNKWeGQ8RlrwjCji3MQeFDJkqlB4YFBaPCjwWnh4jPrSWnj6yEbweJbctOb/8sQ85vAoUB48PDz/tPB4UIzw5vqW0mQoKCyWbjygeP/SbjLmPDxGbsh4lv/63Dz/5owAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADQF7vqAAAAgHRSTlMA/////////////////////////////////////////////////////////////////////////////////////////////////////////////////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADDiOYUAAA5VSURBVHja7ZwLYxo3EscVYMva4QDbDcbEGFyMm1Dncs7lknPSNGla201713e//1epRqPHSCvt2wYnO+AFVo5tRvPT/Ge0hLHNsJa0tn94W1qn+E8eJM48fJg4teBmXsBhWv69DJ3HenzDNtbOzm4xQtqt5Nm2L27SQ8YzSmLACoeEkdDobW1t2U/kn3Ra9e2+eSO+8E6tl/D+2dl4LJ7+9hv780/2xx9s4Ab9XgiOQWFC1TS0/Q4Fn2aSOlAH9esHHz4UonQh7lM1FW/h8B4O73K+m6+/HlqPda1fp2bi/+k1HLvCh1faSv7aXi/i98g/EvUiO0ysiNjbi/fgUHA1HaSEjxMh7lkeM3bYmIgRIcOCEUXiCWIgcsLh2TN1z0upnq3TtLmy58xnL1+KL7wT3/NpiXpJSsdBSvdgQvhsxDH/yqZ0APYU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'
-const PROP_BOX = {"oak": [0, 0, 22, 26], "birch": [23, 0, 14, 28], "flowers": [38, 0, 12, 6], "cherry": [51, 0, 28, 24], "spruce": [80, 0, 18, 30], "igloo": [99, 0, 24, 12], "crimson": [124, 0, 30, 36], "warped": [155, 0, 30, 36], "chorus": [186, 0, 16, 24], "endcity": [203, 0, 18, 44], "crystal": [222, 0, 7, 7], "portal": [230, 0, 28, 9], "kelp": [259, 0, 10, 30], "seagrass": [270, 0, 14, 11], "coral": [285, 0, 16, 12], "azalea": [302, 0, 18, 14], "dripleaf": [321, 0, 14, 16], "vine": [336, 0, 7, 24], "berryvine": [344, 0, 7, 24], "cactus": [352, 0, 12, 24], "deadbush": [365, 0, 10, 8], "temple": [376, 0, 34, 22], "redshroom": [411, 0, 22, 24], "brownshroom": [434, 0, 26, 14], "sensor": [461, 0, 8, 9], "shrieker": [470, 0, 12, 10], "citywall": [483, 0, 40, 28], "oak2": [524, 0, 30, 22], "oak3": [555, 0, 18, 34], "birch2": [574, 0, 12, 36], "cherry2": [587, 0, 22, 30], "cherry3": [610, 0, 32, 26], "spruce2": [643, 0, 14, 38], "spruce3": [658, 0, 12, 22], "crimson2": [671, 0, 24, 30], "crimson3": [696, 0, 26, 44], "warped2": [723, 0, 24, 30], "warped3": [748, 0, 26, 44], "kelp2": [775, 0, 10, 22], "kelp3": [786, 0, 10, 40], "coral2": [797, 0, 20, 12], "seagrass2": [818, 0, 8, 22], "cactus2": [827, 0, 10, 26], "cactus3": [838, 0, 6, 30], "redshroom2": [845, 0, 16, 28], "brownshroom2": [862, 0, 34, 18], "azalea2": [897, 0, 22, 24], "dripstone": [920, 0, 12, 16]}
+const PROP_SHEET = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA9sAAAAsCAMAAABCKFvSAAABgFBMVEUAAABGUGDYODCyIigalo5TlkG+jMg4bi7woMhQljwuxLDizpZ1u1Xn4tTSeKrr8/w8eDsoWkIeRjT80uiqeFAkbnASbGh0JjrErHSEuVF+Fh54eH5uUDJToU9GLDQolqVgljxGcy6WZKUURlBxvmTEKDQosJywIh5kcIJGoJygbrQ83OugRlz6jKr/xGiCWjys03B4lv9gjDzEkmS+0usoFDJkkkC0Wtw8LB7DltLwjNLwjCg8Rlq0ln3/3GTi3MT60lAeFDJkqlD/88R4jPrSWnhaPCjweJaMc1/6yEbSWoLctObwWnj6vjwoUB7/tPA8PDx4UIw85vCW0mQoKCzw5vqWbjygeP/SbjLmPDxGbsj63Dz/5owAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWQbn0AAAAgHRSTlMA//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKOvtVgAAA88SURBVHja7ZyLYxM3Esbl2FtvQrDzKA42SWqniUMJcYHjwkGuBRraKy2Plrv2+vr//47TaPQYaaV9O7a5HTtrexdC4pmfvm8kGcaWI9ZktP2XN2R0in/nfuLMnTuJU8c8zAs4HJT/Xbacx3reG7a08eDBNVZIey15tu2rm/SS8VwlNWCVQyJIaWyur6/bT+SPdFr11/3+e/GF9+qxmcjZgwfDoXj6++/szz/Zw4es76KyG0KqX5hrlby2Pw2QiUy+++qg/vn++/eF2D4W9wOVwDdweA2HVzl/m2++2bIe6xr1Tk25/M0beO0DPjzXUbYYNiN+j/xXos3ILhOrInZ34104FByD+ynl41SIe5bXjF02pmJEybBgRZF6ghqInHJ48kTd87Kts3Walis7Z7746ivxhfeqYEMyo80k28Mg27uQRp7DOOZf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'
+const PROP_BOX = {"oak": [0, 0, 22, 26], "birch": [23, 0, 14, 28], "flowers": [38, 0, 12, 6], "cherry": [51, 0, 28, 24], "spruce": [80, 0, 18, 30], "igloo": [99, 0, 24, 12], "crimson": [124, 0, 30, 36], "warped": [155, 0, 30, 36], "chorus": [186, 0, 16, 24], "endcity": [203, 0, 18, 44], "crystal": [222, 0, 7, 7], "portal": [230, 0, 28, 9], "kelp": [259, 0, 10, 30], "seagrass": [270, 0, 14, 11], "coral": [285, 0, 16, 12], "azalea": [302, 0, 18, 14], "dripleaf": [321, 0, 14, 16], "vine": [336, 0, 7, 24], "berryvine": [344, 0, 7, 24], "cactus": [352, 0, 12, 24], "deadbush": [365, 0, 10, 8], "temple": [376, 0, 34, 22], "redshroom": [411, 0, 22, 24], "brownshroom": [434, 0, 26, 14], "sensor": [461, 0, 8, 9], "shrieker": [470, 0, 12, 10], "citywall": [483, 0, 40, 28], "oak2": [524, 0, 30, 22], "oak3": [555, 0, 18, 34], "birch2": [574, 0, 12, 36], "cherry2": [587, 0, 22, 30], "cherry3": [610, 0, 32, 26], "spruce2": [643, 0, 14, 38], "spruce3": [658, 0, 12, 22], "crimson2": [671, 0, 24, 30], "crimson3": [696, 0, 26, 44], "warped2": [723, 0, 24, 30], "warped3": [748, 0, 26, 44], "kelp2": [775, 0, 10, 22], "kelp3": [786, 0, 10, 40], "coral2": [797, 0, 20, 12], "seagrass2": [818, 0, 8, 22], "cactus2": [827, 0, 10, 26], "cactus3": [838, 0, 6, 30], "redshroom2": [845, 0, 16, 28], "brownshroom2": [862, 0, 34, 18], "azalea2": [897, 0, 22, 24], "dripstone": [920, 0, 12, 16], "reef": [933, 0, 36, 18], "ruin": [970, 0, 16, 36]}
 const SCENES = {
   overworld: { sky: 'rgba(70,140,90,0.16)', shape: 'hills', layers: [['rgba(60,110,80,0.16)', 0.16, 1.2], ['rgba(80,140,90,0.22)', 0.10, 3]],
     props: [['oak', 3], ['birch', 2], ['flowers', 2]], p: 'firefly', n: 16, pc: [210, 255, 120] },
@@ -955,14 +955,19 @@ const VARIANTS = {
     { name: 'basalt', props: [], p: 'ash', pc: [190, 190, 196], n: 55, layers: [['rgba(90,80,90,0.2)', 0.28, 1], ['rgba(120,100,100,0.22)', 0.16, 2.5]] }
   ],
   ocean: [
-    { name: 'kelp', props: [['kelp', 3], ['kelp2', 2], ['kelp3', 3], ['seagrass2', 2]], gap: [2, 14], backProps: [['kelp3', 2]] },
-    { name: 'reef', props: [['coral', 3], ['coral2', 3], ['seagrass', 2], ['kelp2', 1]], gap: [4, 20] },
-    { name: 'sand', layers: [['rgba(60,110,130,0.14)', 0.08, 1], ['rgba(200,190,140,0.18)', 0.05, 2]], props: [['seagrass', 3], ['seagrass2', 1], ['coral2', 1]], gap: [30, 90] }
+    { name: 'kelp', sky: 'rgba(20,110,70,0.3)', props: [['kelp3', 4], ['kelp', 3], ['kelp2', 1]], gap: [1, 8], backProps: [['kelp3', 3], ['kelp', 2]],
+      layers: [['rgba(30,90,60,0.22)', 0.16, 0.8], ['rgba(50,110,70,0.24)', 0.09, 2]] },
+    { name: 'reef', sky: 'rgba(60,210,230,0.34)', rays: true, props: [['reef', 3], ['coral', 3], ['coral2', 3], ['seagrass', 1]], gap: [0, 10], n: 40,
+      layers: [['rgba(70,170,170,0.16)', 0.10, 1], ['rgba(150,170,130,0.2)', 0.06, 2.5]] },
+    { name: 'sand', sky: 'rgba(110,160,170,0.16)', props: [['seagrass', 3], ['seagrass2', 1]], gap: [60, 150], n: 18,
+      layers: [['rgba(150,150,120,0.14)', 0.10, 1], ['rgba(225,205,145,0.24)', 0.13, 2.5]] }
   ],
   lush: [
-    { name: 'pools' },
-    { name: 'dripleaf', pools: 1, props: [['dripleaf', 4], ['azalea', 1]], gap: [6, 24] },
-    { name: 'azalea', props: [['azalea2', 3], ['azalea', 2]], gap: [6, 26], ceil: { color: 'rgba(80,110,90,0.22)', frac: 0.14, props: [['berryvine', 4], ['vine', 1]] } }
+    { name: 'pools', props: [['azalea', 1], ['dripleaf', 1]], gap: [30, 80] },
+    { name: 'dripleaf', pools: 1, poolAt: [0.5], poolW: 50, sky: 'rgba(60,160,150,0.16)', props: [['dripleaf', 5], ['azalea', 1]], gap: [1, 8], backProps: [['dripleaf', 2]],
+      ceil: { color: 'rgba(70,110,100,0.22)', frac: 0.10, props: [['vine', 1]] } },
+    { name: 'azalea', pools: 1, poolAt: [0.84], poolW: 26, sky: 'rgba(150,140,90,0.16)', props: [['azalea2', 3], ['azalea', 2]], gap: [2, 12], backProps: [['azalea2', 2]],
+      ceil: { color: 'rgba(90,100,70,0.24)', frac: 0.2, props: [['berryvine', 1]] }, n: 34 }
   ],
   desert: [
     { name: 'dunes', props: [['cactus', 3], ['cactus2', 2], ['deadbush', 3]], gap: [14, 50] },
@@ -975,9 +980,10 @@ const VARIANTS = {
     { name: 'brown', props: [['brownshroom2', 3], ['brownshroom', 2], ['redshroom2', 1]], gap: [6, 26] }
   ],
   deepdark: [
-    { name: 'city', props: [['citywall', 3], ['sensor', 2]], gap: [6, 30] },
-    { name: 'sculk', props: [['sensor', 4], ['shrieker', 3]], gap: [10, 34], n: 34 },
-    { name: 'cave', props: [['sensor', 2], ['shrieker', 1]], gap: [20, 60], ceil: { color: 'rgba(40,60,70,0.22)', frac: 0.14, props: [['dripstone', 1]] } }
+    { name: 'city', sky: 'rgba(90,100,140,0.2)', p: 'mote', pc: [150, 170, 210], props: [['citywall', 3], ['ruin', 2], ['sensor', 1]], gap: [0, 12], backProps: [['ruin', 2], ['citywall', 1]], ceil: null },
+    { name: 'sculk', shape: 'flat', sky: 'rgba(20,170,180,0.26)', layers: [['rgba(20,120,130,0.2)', 0.10, 0.6], ['rgba(30,150,160,0.26)', 0.07, 1.5]], props: [['sensor', 4], ['shrieker', 3]], gap: [2, 12], n: 44, ceil: null },
+    { name: 'cave', sky: 'rgba(110,80,50,0.16)', p: 'mote', pc: [220, 190, 150], props: [['sensor', 1]], gap: [60, 140], ceil: { color: 'rgba(40,60,70,0.24)', frac: 0.2, props: [['dripstone', 1]] },
+      layers: [['rgba(40,80,100,0.18)', 0.32, 0.6], ['rgba(30,110,130,0.2)', 0.14, 1.5]] }
   ]
 }
 
@@ -994,6 +1000,13 @@ export class Scene {
     this.ctx = this.canvas.getContext('2d')
     this.low = document.createElement('canvas')
     this.lctx = this.low.getContext('2d')
+    // Second canvas with normal blending: only the End's obsidian pillars go here, so they can be dark.
+    this.solid = document.createElement('canvas')
+    this.solid.id = 'hmt-scene-solid'
+    Object.assign(this.solid.style, { position: 'fixed', pointerEvents: 'none', zIndex: '2', imageRendering: 'pixelated', display: 'none', opacity: '0.68' })
+    document.body.appendChild(this.solid)
+    this.slow = document.createElement('canvas')
+    this.sctx = this.slow.getContext('2d')
     this.sheet = new Image()
     this.sheet.src = PROP_SHEET
     this.world = ''
@@ -1016,15 +1029,18 @@ export class Scene {
     const r = el?.getBoundingClientRect()
     this.visible = Boolean(r && r.width > 200 && r.height > 120)
     this.canvas.style.display = this.visible ? 'block' : 'none'
+    this.solid.style.display = this.visible ? 'block' : 'none'
     if (!this.visible) return false
     const w = Math.round(r.width)
     const h = Math.round(r.height)
     const resized = w !== this.rect.w || h !== this.rect.h
     if (resized || r.left !== this.rect.x || r.top !== this.rect.y) {
       this.rect = { x: r.left, y: r.top, w, h }
-      Object.assign(this.canvas.style, { left: `${r.left}px`, top: `${r.top}px`, width: `${w}px`, height: `${h}px` })
-      this.canvas.width = w
-      this.canvas.height = h
+      for (const c of [this.canvas, this.solid]) {
+        Object.assign(c.style, { left: `${r.left}px`, top: `${r.top}px`, width: `${w}px`, height: `${h}px` })
+        c.width = w
+        c.height = h
+      }
     }
     const world = SCENES[worldOf()] ? worldOf() : 'overworld'
     const mode = world === 'end' ? this.getMode() || 'main' : ''
@@ -1056,6 +1072,8 @@ export class Scene {
       if (shape === 'peaks') {
         const P = 3 + i
         v = 0.25 + 0.75 * (1 - 2 * Math.abs(((u * P + i * 0.37) % 1) - 0.5))
+      } else if (shape === 'flat') {
+        v = 0.42 + 0.05 * Math.sin(2 * Math.PI * (3 * u + i * 0.3))
       } else {
         v = 0.6 + 0.25 * Math.sin(2 * Math.PI * (2 * u + i * 0.3)) + 0.15 * Math.sin(2 * Math.PI * (5 * u + i))
       }
@@ -1073,6 +1091,8 @@ export class Scene {
     const LH = Math.max(1, Math.ceil(this.rect.h / PX))
     this.low.width = LW
     this.low.height = LH
+    this.slow.width = LW
+    this.slow.height = LH
     this.LW = LW
     this.LH = LH
     const L = LW * 2
@@ -1119,8 +1139,8 @@ export class Scene {
     this.end = cfg.end ? this.buildEnd() : null
     this.poolList = []
     if (cfg.pools && front) {
-      for (const u of [0.24, 0.74].slice(0, cfg.pools)) {
-        const w = 34
+      for (const u of (cfg.poolAt || [0.24, 0.74]).slice(0, cfg.pools)) {
+        const w = cfg.poolW || 34
         const d = 8
         const x0 = Math.max(2, Math.min(LW - w - 2, Math.round(u * LW - w / 2)))
         let hb = 12
@@ -1142,7 +1162,7 @@ export class Scene {
     if (this.mode === 'main') {
       const ground = Array.from({ length: LW }, (_, x) =>
         Math.round(LH * (0.09 + 0.03 * Math.sin((x / LW) * Math.PI * 3) + 0.015 * Math.sin(x / 7))))
-      const n = [5, 7, 9][Math.floor(r() * 3)]
+      const n = [5, 6, 7][Math.floor(r() * 3)]
       const pillars = []
       for (let i = 0; i < n; i++) {
         const u = (i + 0.5) / n
@@ -1186,29 +1206,32 @@ export class Scene {
   /** Obsidian column: stacked blocks with seams, purple specks and a lit left edge (reads as solid
    *  stone, not a light beam, even though the scene layer can only lighten the page). */
   obsidian(w, h, seed) {
+    // Dark, nearly opaque obsidian (drawn on the normal-blend layer): block seams, purple specks, lit edges.
     const c = document.createElement('canvas')
     c.width = w
     c.height = h
     const g = c.getContext('2d')
-    g.fillStyle = 'rgba(55,38,90,0.20)'
+    g.fillStyle = 'rgba(20,12,34,0.9)'
     g.fillRect(0, 0, w, h)
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         const v = ((x * 73856093) ^ (y * 19349663) ^ (seed * 83492791)) >>> 0
-        if (v % 9 === 0) {
-          g.fillStyle = 'rgba(170,120,240,0.45)'
+        if (v % 7 === 0) {
+          g.fillStyle = v % 3 ? 'rgba(70,44,110,0.95)' : 'rgba(120,80,180,0.95)'
           g.fillRect(x, y, 1, 1)
         }
       }
       if (y % 4 === 0) {
-        g.fillStyle = 'rgba(140,105,200,0.32)'
+        g.fillStyle = 'rgba(8,4,16,0.95)'
         g.fillRect(0, y, w, 1)
         g.fillRect(((y / 4) % 2) * Math.floor(w / 2), y, 1, 4)
       }
     }
-    g.fillStyle = 'rgba(200,170,255,0.5)'
+    g.fillStyle = 'rgba(110,86,160,0.95)'
     g.fillRect(0, 0, 1, h)
     g.fillRect(0, 0, w, 1)
+    g.fillStyle = 'rgba(6,3,12,0.95)'
+    g.fillRect(w - 1, 0, 1, h)
     return c
   }
 
@@ -1316,7 +1339,8 @@ export class Scene {
         const top = LH - p.h
         const x0 = p.x - (p.w >> 1)
         if (!p.tex) p.tex = this.obsidian(p.w, p.h, p.x)
-        g.drawImage(p.tex, x0, top)
+        const vis = Math.max(1, p.h - (E.ground[p.x] || 0) + 1)
+        this.sctx.drawImage(p.tex, 0, 0, p.w, vis, x0, top, p.w, vis)
         if (p.cage) {
           g.fillStyle = 'rgba(210,210,220,0.26)'
           for (let k = -1; k <= p.w; k += 2) g.fillRect(x0 + k, top - 6, 1, 6)
@@ -1358,6 +1382,7 @@ export class Scene {
     const cfg = this.cfg || SCENES[this.world]
     const { lctx: g, LW, LH } = this
     g.clearRect(0, 0, LW, LH)
+    this.sctx.clearRect(0, 0, LW, LH)
     const sky = g.createLinearGradient(0, 0, 0, LH)
     sky.addColorStop(0, 'rgba(0,0,0,0)')
     sky.addColorStop(1, cfg.sky)
@@ -1462,6 +1487,10 @@ export class Scene {
     ctx.imageSmoothingEnabled = false
     ctx.clearRect(0, 0, this.rect.w, this.rect.h)
     ctx.drawImage(this.low, 0, 0, LW, LH, 0, 0, LW * PX, LH * PX)
+    const sx = this.solid.getContext('2d')
+    sx.imageSmoothingEnabled = false
+    sx.clearRect(0, 0, this.rect.w, this.rect.h)
+    if (this.end && this.end.mode === 'main') sx.drawImage(this.slow, 0, 0, LW, LH, 0, 0, LW * PX, LH * PX)
   }
 
   start() {
@@ -1483,6 +1512,7 @@ export class Scene {
   destroy() {
     cancelAnimationFrame(this.raf)
     this.canvas.remove()
+    this.solid.remove()
   }
 }
 
@@ -1735,7 +1765,7 @@ export default {
     }
     style.textContent = CSS
     detectTheme()
-    for (const id of ['hmt-critters', 'hmt-scene', 'hmt-wipe', 'hmt-world-css']) document.getElementById(id)?.remove()
+    for (const id of ['hmt-critters', 'hmt-scene', 'hmt-scene-solid', 'hmt-wipe', 'hmt-world-css']) document.getElementById(id)?.remove()
     const worldStyle = document.createElement('style')
     worldStyle.id = 'hmt-world-css'
     worldStyle.textContent = WORLD_CSS

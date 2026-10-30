@@ -955,14 +955,19 @@ const VARIANTS = {
     { name: 'basalt', props: [], p: 'ash', pc: [190, 190, 196], n: 55, layers: [['rgba(90,80,90,0.2)', 0.28, 1], ['rgba(120,100,100,0.22)', 0.16, 2.5]] }
   ],
   ocean: [
-    { name: 'kelp', props: [['kelp', 3], ['kelp2', 2], ['kelp3', 3], ['seagrass2', 2]], gap: [2, 14], backProps: [['kelp3', 2]] },
-    { name: 'reef', props: [['coral', 3], ['coral2', 3], ['seagrass', 2], ['kelp2', 1]], gap: [4, 20] },
-    { name: 'sand', layers: [['rgba(60,110,130,0.14)', 0.08, 1], ['rgba(200,190,140,0.18)', 0.05, 2]], props: [['seagrass', 3], ['seagrass2', 1], ['coral2', 1]], gap: [30, 90] }
+    { name: 'kelp', sky: 'rgba(20,110,70,0.3)', props: [['kelp3', 4], ['kelp', 3], ['kelp2', 1]], gap: [1, 8], backProps: [['kelp3', 3], ['kelp', 2]],
+      layers: [['rgba(30,90,60,0.22)', 0.16, 0.8], ['rgba(50,110,70,0.24)', 0.09, 2]] },
+    { name: 'reef', sky: 'rgba(60,210,230,0.34)', rays: true, props: [['reef', 3], ['coral', 3], ['coral2', 3], ['seagrass', 1]], gap: [0, 10], n: 40,
+      layers: [['rgba(70,170,170,0.16)', 0.10, 1], ['rgba(150,170,130,0.2)', 0.06, 2.5]] },
+    { name: 'sand', sky: 'rgba(110,160,170,0.16)', props: [['seagrass', 3], ['seagrass2', 1]], gap: [60, 150], n: 18,
+      layers: [['rgba(150,150,120,0.14)', 0.10, 1], ['rgba(225,205,145,0.24)', 0.13, 2.5]] }
   ],
   lush: [
-    { name: 'pools' },
-    { name: 'dripleaf', pools: 1, props: [['dripleaf', 4], ['azalea', 1]], gap: [6, 24] },
-    { name: 'azalea', props: [['azalea2', 3], ['azalea', 2]], gap: [6, 26], ceil: { color: 'rgba(80,110,90,0.22)', frac: 0.14, props: [['berryvine', 4], ['vine', 1]] } }
+    { name: 'pools', props: [['azalea', 1], ['dripleaf', 1]], gap: [30, 80] },
+    { name: 'dripleaf', pools: 1, poolAt: [0.5], poolW: 50, sky: 'rgba(60,160,150,0.16)', props: [['dripleaf', 5], ['azalea', 1]], gap: [1, 8], backProps: [['dripleaf', 2]],
+      ceil: { color: 'rgba(70,110,100,0.22)', frac: 0.10, props: [['vine', 1]] } },
+    { name: 'azalea', pools: 1, poolAt: [0.84], poolW: 26, sky: 'rgba(150,140,90,0.16)', props: [['azalea2', 3], ['azalea', 2]], gap: [2, 12], backProps: [['azalea2', 2]],
+      ceil: { color: 'rgba(90,100,70,0.24)', frac: 0.2, props: [['berryvine', 1]] }, n: 34 }
   ],
   desert: [
     { name: 'dunes', props: [['cactus', 3], ['cactus2', 2], ['deadbush', 3]], gap: [14, 50] },
@@ -975,9 +980,10 @@ const VARIANTS = {
     { name: 'brown', props: [['brownshroom2', 3], ['brownshroom', 2], ['redshroom2', 1]], gap: [6, 26] }
   ],
   deepdark: [
-    { name: 'city', props: [['citywall', 3], ['sensor', 2]], gap: [6, 30] },
-    { name: 'sculk', props: [['sensor', 4], ['shrieker', 3]], gap: [10, 34], n: 34 },
-    { name: 'cave', props: [['sensor', 2], ['shrieker', 1]], gap: [20, 60], ceil: { color: 'rgba(40,60,70,0.22)', frac: 0.14, props: [['dripstone', 1]] } }
+    { name: 'city', sky: 'rgba(90,100,140,0.2)', p: 'mote', pc: [150, 170, 210], props: [['citywall', 3], ['ruin', 2], ['sensor', 1]], gap: [0, 12], backProps: [['ruin', 2], ['citywall', 1]], ceil: null },
+    { name: 'sculk', shape: 'flat', sky: 'rgba(20,170,180,0.26)', layers: [['rgba(20,120,130,0.2)', 0.10, 0.6], ['rgba(30,150,160,0.26)', 0.07, 1.5]], props: [['sensor', 4], ['shrieker', 3]], gap: [2, 12], n: 44, ceil: null },
+    { name: 'cave', sky: 'rgba(110,80,50,0.16)', p: 'mote', pc: [220, 190, 150], props: [['sensor', 1]], gap: [60, 140], ceil: { color: 'rgba(40,60,70,0.24)', frac: 0.2, props: [['dripstone', 1]] },
+      layers: [['rgba(40,80,100,0.18)', 0.32, 0.6], ['rgba(30,110,130,0.2)', 0.14, 1.5]] }
   ]
 }
 
@@ -994,6 +1000,13 @@ export class Scene {
     this.ctx = this.canvas.getContext('2d')
     this.low = document.createElement('canvas')
     this.lctx = this.low.getContext('2d')
+    // Second canvas with normal blending: only the End's obsidian pillars go here, so they can be dark.
+    this.solid = document.createElement('canvas')
+    this.solid.id = 'hmt-scene-solid'
+    Object.assign(this.solid.style, { position: 'fixed', pointerEvents: 'none', zIndex: '2', imageRendering: 'pixelated', display: 'none', opacity: '0.68' })
+    document.body.appendChild(this.solid)
+    this.slow = document.createElement('canvas')
+    this.sctx = this.slow.getContext('2d')
     this.sheet = new Image()
     this.sheet.src = PROP_SHEET
     this.world = ''
@@ -1016,15 +1029,18 @@ export class Scene {
     const r = el?.getBoundingClientRect()
     this.visible = Boolean(r && r.width > 200 && r.height > 120)
     this.canvas.style.display = this.visible ? 'block' : 'none'
+    this.solid.style.display = this.visible ? 'block' : 'none'
     if (!this.visible) return false
     const w = Math.round(r.width)
     const h = Math.round(r.height)
     const resized = w !== this.rect.w || h !== this.rect.h
     if (resized || r.left !== this.rect.x || r.top !== this.rect.y) {
       this.rect = { x: r.left, y: r.top, w, h }
-      Object.assign(this.canvas.style, { left: `${r.left}px`, top: `${r.top}px`, width: `${w}px`, height: `${h}px` })
-      this.canvas.width = w
-      this.canvas.height = h
+      for (const c of [this.canvas, this.solid]) {
+        Object.assign(c.style, { left: `${r.left}px`, top: `${r.top}px`, width: `${w}px`, height: `${h}px` })
+        c.width = w
+        c.height = h
+      }
     }
     const world = SCENES[worldOf()] ? worldOf() : 'overworld'
     const mode = world === 'end' ? this.getMode() || 'main' : ''
@@ -1056,6 +1072,8 @@ export class Scene {
       if (shape === 'peaks') {
         const P = 3 + i
         v = 0.25 + 0.75 * (1 - 2 * Math.abs(((u * P + i * 0.37) % 1) - 0.5))
+      } else if (shape === 'flat') {
+        v = 0.42 + 0.05 * Math.sin(2 * Math.PI * (3 * u + i * 0.3))
       } else {
         v = 0.6 + 0.25 * Math.sin(2 * Math.PI * (2 * u + i * 0.3)) + 0.15 * Math.sin(2 * Math.PI * (5 * u + i))
       }
@@ -1073,6 +1091,8 @@ export class Scene {
     const LH = Math.max(1, Math.ceil(this.rect.h / PX))
     this.low.width = LW
     this.low.height = LH
+    this.slow.width = LW
+    this.slow.height = LH
     this.LW = LW
     this.LH = LH
     const L = LW * 2
@@ -1119,8 +1139,8 @@ export class Scene {
     this.end = cfg.end ? this.buildEnd() : null
     this.poolList = []
     if (cfg.pools && front) {
-      for (const u of [0.24, 0.74].slice(0, cfg.pools)) {
-        const w = 34
+      for (const u of (cfg.poolAt || [0.24, 0.74]).slice(0, cfg.pools)) {
+        const w = cfg.poolW || 34
         const d = 8
         const x0 = Math.max(2, Math.min(LW - w - 2, Math.round(u * LW - w / 2)))
         let hb = 12
@@ -1142,7 +1162,7 @@ export class Scene {
     if (this.mode === 'main') {
       const ground = Array.from({ length: LW }, (_, x) =>
         Math.round(LH * (0.09 + 0.03 * Math.sin((x / LW) * Math.PI * 3) + 0.015 * Math.sin(x / 7))))
-      const n = [5, 7, 9][Math.floor(r() * 3)]
+      const n = [5, 6, 7][Math.floor(r() * 3)]
       const pillars = []
       for (let i = 0; i < n; i++) {
         const u = (i + 0.5) / n
@@ -1186,29 +1206,32 @@ export class Scene {
   /** Obsidian column: stacked blocks with seams, purple specks and a lit left edge (reads as solid
    *  stone, not a light beam, even though the scene layer can only lighten the page). */
   obsidian(w, h, seed) {
+    // Dark, nearly opaque obsidian (drawn on the normal-blend layer): block seams, purple specks, lit edges.
     const c = document.createElement('canvas')
     c.width = w
     c.height = h
     const g = c.getContext('2d')
-    g.fillStyle = 'rgba(55,38,90,0.20)'
+    g.fillStyle = 'rgba(20,12,34,0.9)'
     g.fillRect(0, 0, w, h)
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         const v = ((x * 73856093) ^ (y * 19349663) ^ (seed * 83492791)) >>> 0
-        if (v % 9 === 0) {
-          g.fillStyle = 'rgba(170,120,240,0.45)'
+        if (v % 7 === 0) {
+          g.fillStyle = v % 3 ? 'rgba(70,44,110,0.95)' : 'rgba(120,80,180,0.95)'
           g.fillRect(x, y, 1, 1)
         }
       }
       if (y % 4 === 0) {
-        g.fillStyle = 'rgba(140,105,200,0.32)'
+        g.fillStyle = 'rgba(8,4,16,0.95)'
         g.fillRect(0, y, w, 1)
         g.fillRect(((y / 4) % 2) * Math.floor(w / 2), y, 1, 4)
       }
     }
-    g.fillStyle = 'rgba(200,170,255,0.5)'
+    g.fillStyle = 'rgba(110,86,160,0.95)'
     g.fillRect(0, 0, 1, h)
     g.fillRect(0, 0, w, 1)
+    g.fillStyle = 'rgba(6,3,12,0.95)'
+    g.fillRect(w - 1, 0, 1, h)
     return c
   }
 
@@ -1316,7 +1339,8 @@ export class Scene {
         const top = LH - p.h
         const x0 = p.x - (p.w >> 1)
         if (!p.tex) p.tex = this.obsidian(p.w, p.h, p.x)
-        g.drawImage(p.tex, x0, top)
+        const vis = Math.max(1, p.h - (E.ground[p.x] || 0) + 1)
+        this.sctx.drawImage(p.tex, 0, 0, p.w, vis, x0, top, p.w, vis)
         if (p.cage) {
           g.fillStyle = 'rgba(210,210,220,0.26)'
           for (let k = -1; k <= p.w; k += 2) g.fillRect(x0 + k, top - 6, 1, 6)
@@ -1358,6 +1382,7 @@ export class Scene {
     const cfg = this.cfg || SCENES[this.world]
     const { lctx: g, LW, LH } = this
     g.clearRect(0, 0, LW, LH)
+    this.sctx.clearRect(0, 0, LW, LH)
     const sky = g.createLinearGradient(0, 0, 0, LH)
     sky.addColorStop(0, 'rgba(0,0,0,0)')
     sky.addColorStop(1, cfg.sky)
@@ -1462,6 +1487,10 @@ export class Scene {
     ctx.imageSmoothingEnabled = false
     ctx.clearRect(0, 0, this.rect.w, this.rect.h)
     ctx.drawImage(this.low, 0, 0, LW, LH, 0, 0, LW * PX, LH * PX)
+    const sx = this.solid.getContext('2d')
+    sx.imageSmoothingEnabled = false
+    sx.clearRect(0, 0, this.rect.w, this.rect.h)
+    if (this.end && this.end.mode === 'main') sx.drawImage(this.slow, 0, 0, LW, LH, 0, 0, LW * PX, LH * PX)
   }
 
   start() {
@@ -1483,6 +1512,7 @@ export class Scene {
   destroy() {
     cancelAnimationFrame(this.raf)
     this.canvas.remove()
+    this.solid.remove()
   }
 }
 
@@ -1735,7 +1765,7 @@ export default {
     }
     style.textContent = CSS
     detectTheme()
-    for (const id of ['hmt-critters', 'hmt-scene', 'hmt-wipe', 'hmt-world-css']) document.getElementById(id)?.remove()
+    for (const id of ['hmt-critters', 'hmt-scene', 'hmt-scene-solid', 'hmt-wipe', 'hmt-world-css']) document.getElementById(id)?.remove()
     const worldStyle = document.createElement('style')
     worldStyle.id = 'hmt-world-css'
     worldStyle.textContent = WORLD_CSS

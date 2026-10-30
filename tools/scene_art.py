@@ -331,18 +331,27 @@ def shrieker() -> Spr:
 
 
 def citywall() -> Spr:
+    """Ancient-city wall: deepslate with arches, cyan-lit top edge, arch rims and cracks
+    (the scene layer only lightens the page, so the cyan is what makes it read)."""
     s = Spr(40, 28)
-    ds, dl = (70, 80, 96, 255), (100, 112, 130, 255)
+    ds, dl, cy = (70, 80, 96, 255), (100, 112, 130, 255), (60, 220, 235, 255)
     s.rect(0, 6, 40, 22, ds)
-    s.rect(0, 6, 40, 1, dl)
+    s.rect(0, 6, 40, 1, cy)
     for x0 in (4, 17, 30):
         for y in range(12, 28):
             for x in range(x0, x0 + 7):
                 if y > 15 or (x - x0 - 3) ** 2 + (y - 15) ** 2 <= 10:
                     s.p(x, y, (0, 0, 0, 0))
+        for y in range(13, 28):
+            s.p(x0 - 1, y, (40, 150, 165, 255))
+            s.p(x0 + 7, y, (40, 150, 165, 255))
+        s.rect(x0, 11, 7, 1, (40, 150, 165, 255))
     for x in (2, 16, 29):
         s.rect(x, 2, 3, 4, ds)
-    s.rect(18, 8, 4, 2, (60, 230, 240, 255))
+        s.p(x + 1, 2, cy)
+    s.rect(18, 8, 4, 2, cy)
+    for x, y in ((12, 9), (13, 10), (25, 8), (26, 9), (37, 10)):
+        s.p(x, y, cy)
     return s
 
 
@@ -548,12 +557,47 @@ def azalea_tree() -> Spr:
 
 
 def dripstone() -> Spr:
-    """Pointed dripstone hanging from a cave ceiling."""
+    """Pointed dripstone hanging from a cave ceiling, with lit tips."""
     s = Spr(12, 16)
     for x0, h in ((0, 12), (4, 8), (7, 16), (10, 6)):
         for y in range(h):
             w = max(1, round(2.5 * (1 - y / h)))
-            s.rect(x0 + (2 - w // 2) - 1, y, w, 1, (150, 120, 100, 255) if y % 3 else (120, 96, 80, 255))
+            s.rect(x0 + (2 - w // 2) - 1, y, w, 1, (180, 150, 125, 255) if y % 3 else (140, 115, 95, 255))
+        s.p(x0 + 1, h - 1, (240, 225, 200, 255))
+    return s
+
+
+def reef() -> Spr:
+    """Reef cluster: brain-coral dome, yellow tube coral, blue fan."""
+    s = Spr(36, 18)
+    for y in range(8, 18):
+        for x in range(14):
+            if ((x - 6.5) / 7) ** 2 + ((y - 18) / 9) ** 2 <= 1:
+                s.p(x, y, (250, 140, 170, 255) if (x * 3 + y) % 4 else (210, 90, 130, 255))
+    for x, h, c in ((15, 14, (250, 210, 80, 255)), (18, 10, (250, 190, 60, 255)), (21, 16, (255, 220, 100, 255))):
+        s.rect(x, 18 - h, 2, h, c)
+        s.p(x, 18 - h, (255, 250, 200, 255))
+    for y in range(12):
+        w = 1 + (11 - y) // 2
+        for x in range(28 - w, 28 + w + 1):
+            if (x + y) % 2:
+                s.p(x, y + 4, (120, 150, 255, 255))
+    s.rect(27, 15, 2, 3, (120, 150, 255, 255))
+    return s
+
+
+def ruin() -> Spr:
+    """Broken deepslate pillar from the ancient city, cyan cracks."""
+    s = Spr(16, 36)
+    ds, dl, cy = (70, 80, 96, 255), (100, 112, 130, 255), (60, 220, 235, 255)
+    s.rect(3, 7, 10, 29, ds)
+    s.rect(3, 7, 1, 29, dl)
+    for x, y in ((4, 5), (5, 4), (8, 3), (9, 5), (11, 4), (12, 6)):
+        s.rect(x, y, 1, 7 - y, ds)
+    s.rect(1, 32, 14, 4, dl)
+    for x, y in ((6, 12), (7, 13), (7, 14), (8, 15), (9, 22), (9, 23), (8, 24), (5, 28)):
+        s.p(x, y, cy)
+    s.rect(5, 18, 6, 1, cy)
     return s
 
 
@@ -571,7 +615,7 @@ PROPS = {"oak": oak, "birch": birch, "flowers": flowers, "cherry": cherry, "spru
          "warped2": lambda: huge_fungus(False, 24, 30, 11, 3, -2, 5, 3), "warped3": lambda: huge_fungus(False, 26, 44, 13, 3, 2, 6, 5),
          "kelp2": lambda: kelp_v(22, 1.3), "kelp3": lambda: kelp_v(40, 2.6), "coral2": coral_fan, "seagrass2": seagrass_tall,
          "cactus2": cactus_one, "cactus3": cactus_plain, "redshroom2": redshroom_tall, "brownshroom2": brownshroom_wide,
-         "azalea2": azalea_tree, "dripstone": dripstone}
+         "azalea2": azalea_tree, "dripstone": dripstone, "reef": reef, "ruin": ruin}
 
 
 def atlas():
