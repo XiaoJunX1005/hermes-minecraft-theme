@@ -266,31 +266,37 @@ def ghast_front(f):
 
 
 def blaze_front(f):
+    """Blaze: a yellow head floating above two rings of golden rods that circle it in
+    opposite directions; rods behind the body are darker and drawn first."""
     g = G()
     rods = []
-    for ring, (cy, rx, sign) in enumerate(((4, 6.0, 1), (10, 6.5, -1))):
+    for ring, (cy, rx, sign, off) in enumerate(((8, 6.5, 1, 0.0), (12, 4.5, -1, math.pi / 4))):
         for k in range(4):
-            ang = sign * (f / 8) * (math.pi / 2) + k * math.pi / 2 + ring * math.pi / 4
-            rods.append((math.sin(ang), round(7 + math.cos(ang) * rx), cy))
+            a = sign * (f / 8) * (math.pi / 2) + k * math.pi / 2 + off
+            rods.append((math.sin(a), round(7 + math.cos(a) * rx), cy))
     rods.sort()
 
-    def rod(x, y, d):
-        k = 0.55 if d < 0 else 1.0
-        g.rect(x, y, 2, 5, (int(225 * k), int(140 * k), int(30 * k), 255))
-        g.rect(x, y, 2, 1, (int(255 * k), int(225 * k), int(120 * k), 255))
+    def rod(x, y, front):
+        c, tip = ((255, 176, 40, 255), (255, 232, 140, 255)) if front else ((150, 86, 24, 255), (190, 120, 40, 255))
+        g.rect(x, y - 1, 2, 4, c)
+        g.rect(x, y - 1, 2, 1, tip)
 
     for d, x, y in rods:
         if d < 0:
-            rod(x, y, d)
-    g.rect(4, 2, 8, 7, (255, 206, 70, 255))
-    g.rect(4, 2, 8, 1, (255, 238, 150, 255))
-    g.rect(5, 4, 2, 2, (70, 34, 10, 255))
-    g.rect(9, 4, 2, 2, (70, 34, 10, 255))
-    g.rect(6, 7, 4, 1, (170, 80, 20, 255))
+            rod(x, y, False)
+    g.rect(5, 1, 6, 6, (255, 210, 80, 255))
+    g.rect(5, 1, 6, 1, (255, 240, 160, 255))
+    g.rect(5, 6, 6, 1, (210, 150, 40, 255))
+    g.rect(6, 3, 1, 1, (60, 24, 8, 255))
+    g.rect(9, 3, 1, 1, (60, 24, 8, 255))
+    g.rect(7, 5, 2, 1, (150, 70, 20, 255))
     for d, x, y in rods:
         if d >= 0:
-            rod(x, y, d)
+            rod(x, y, True)
     g.outline()
+    sy = 0 - (f % 4) // 2
+    if f % 4 < 3:
+        g.p(4 + (f // 2) % 3, max(0, sy), (150, 150, 156, 160))
     return g.im
 
 
@@ -424,38 +430,51 @@ def squid_front(f, glow=False):
 
 
 def warden_front(f):
+    """Warden from the front: very wide shoulders, long heavy arms, small eyeless head
+    with two antler-like 'ears', glowing souls behind the ribcage."""
     g = G()
-    g.rect(4, 4, 8, 10, (20, 42, 52, 255))
-    g.rect(4, 1, 8, 4, (24, 54, 64, 255))
-    g.p(3, 0, (60, 200, 210, 255))
-    g.p(12, 0, (60, 200, 210, 255))
-    glow = (40, 230, 240, 255) if f % 8 < 4 else (24, 150, 160, 255)
-    g.rect(6, 7, 4, 3, glow)
-    for y in (11, 12):
-        g.p(5, y, (40, 90, 100, 255))
-        g.p(10, y, (40, 90, 100, 255))
-    step = f % 4 < 2
-    g.rect(5, 14, 2, 2 if step else 1, (20, 42, 52, 255))
-    g.rect(9, 14, 2, 1 if step else 2, (20, 42, 52, 255))
+    body, dark, head = (26, 50, 60, 255), (14, 30, 38, 255), (34, 66, 78, 255)
+    pulse = f % 8 < 4
+    glow = (60, 235, 245, 255) if pulse else (30, 160, 170, 255)
+    sway = 1 if f % 4 < 2 else 0
+    g.rect(5, 13, 2, 3, dark)
+    g.rect(9, 13, 2, 3, dark)
+    g.rect(3, 5, 10, 8, body)
+    g.rect(2, 5, 12, 2, head)
+    g.rect(0, 6 + sway, 3, 8, dark)
+    g.rect(13, 7 - sway, 3, 8, dark)
+    g.rect(5, 1, 6, 4, head)
+    g.rect(5, 4, 6, 1, dark)
+    for x, y in ((3, 0), (4, 1), (4, 2), (12, 0), (11, 1), (11, 2)):
+        g.p(x, y, glow)
+    g.rect(5, 7, 6, 4, glow)
+    for y in (8, 10):
+        g.rect(5, y, 6, 1, dark)
+    g.rect(7, 7, 2, 4, dark)
     g.outline((50, 110, 120, 255))
     return g.im
 
 
 def warden_side(f):
-    """Warden walking (facing right): heavy, slow stride, chest glows."""
+    """Warden walking (facing right): hunched heavy body, big front arm swinging."""
     g = G()
-    body, head, dk = (20, 42, 52, 255), (24, 54, 64, 255), (14, 30, 38, 255)
+    body, dark, head = (26, 50, 60, 255), (14, 30, 38, 255), (34, 66, 78, 255)
+    glow = (60, 235, 245, 255) if f % 8 < 4 else (30, 160, 170, 255)
     step = f % 4 < 2
-    g.rect(5, 13, 2, 3 if step else 2, dk)
-    g.rect(9, 13, 2, 2 if step else 3, dk)
-    g.rect(5, 4, 7, 9, body)
-    g.rect(6, 0, 6, 4, head)
-    g.p(5, 0, (60, 200, 210, 255))
-    g.p(4, 1, (60, 200, 210, 255))
-    glow = (40, 230, 240, 255) if f % 8 < 4 else (24, 150, 160, 255)
-    g.rect(9, 6, 2, 3, glow)
-    arm = 1 if step else -1
-    g.rect(7 + arm, 6, 2, 6, dk)
+    g.rect(5, 13, 2, 3 if step else 2, dark)
+    g.rect(9, 13, 2, 2 if step else 3, dark)
+    g.rect(3, 5, 8, 8, body)
+    g.rect(2, 4, 4, 4, head)
+    g.rect(4, 6 - (0 if step else 1), 2, 8, (20, 40, 48, 255))
+    g.rect(8, 1, 6, 5, head)
+    g.rect(8, 5, 6, 1, dark)
+    for x, y in ((8, 0), (7, 0), (13, 0), (14, 1)):
+        g.p(x, y, glow)
+    g.rect(9, 7, 2, 4, glow)
+    g.p(9, 8, dark)
+    g.p(9, 10, dark)
+    sw = 1 if step else -1
+    g.rect(10 + sw, 6, 3, 8, dark)
     g.outline((50, 110, 120, 255))
     return g.im
 

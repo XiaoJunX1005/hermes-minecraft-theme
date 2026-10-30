@@ -658,7 +658,8 @@ export class Critters {
     }
   }
 
-  /** Axolotls live in the lush-cave pools: swim back and forth, rest, dart away from the cursor. */
+  /** Axolotls live in the lush-cave pools: swim, rest, now and then climb out and walk along the
+   *  bank for a few seconds, then slip back in. A cursor nearby always sends them back into the water. */
   stepPool(c, dt, boost) {
     const S = SPECIES[c.sp]
     if (c.state === 'leave') {
@@ -673,33 +674,71 @@ export class Critters {
       c.pool = free.length ? free[Math.floor(this.rand() * free.length)] : Math.floor(this.rand() * ps.length)
       c.x = (ps[c.pool].x0 + ps[c.pool].x1) / 2
       c.tx = c.x
+      c.land = false
+      c.home = false
       c.state = 'fly'
     }
     const P = ps[c.pool]
     const r = S.size * 0.4
     const lo = P.x0 + r
     const hi = Math.max(lo, P.x1 - r)
-    c.y = P.top + (P.bottom - P.top) * 0.45 + (dt ? Math.sin(this.t * 1.6 + c.phase) * 1.5 : 0)
+    const blo = P.bank0 + r
+    const bhi = Math.max(blo, P.bank1 - r)
+    const swimY = P.top + (P.bottom - P.top) * 0.45
+    const landY = P.top - S.size / 2 + 3
+    const near = dt > 0 && Math.abs(c.x - this.pointer.x) < 70 && Math.abs(c.y - this.pointer.y) < 60
     let want = S.speed * boost
     if (c.wait > 0) {
       c.wait -= dt
       want = 0
     }
-    if (dt && Math.abs(c.x - this.pointer.x) < 70 && Math.abs(c.y - this.pointer.y) < 60) {
-      c.tx = c.x - lo > hi - c.x ? lo : hi
-      want = S.speed * 2.5
-      c.wait = 0
+    if (c.land) {
+      c.landT -= dt
+      if (!c.home && (near || c.landT <= 0)) {
+        c.home = true
+        c.tx = (lo + hi) / 2 + (this.rand() - 0.5) * (hi - lo) * 0.5
+      }
+      if (near) {
+        want = S.speed * 2.6
+        c.wait = 0
+      }
+      if (c.home && c.x >= lo && c.x <= hi) {
+        c.land = false
+        c.home = false
+        c.tx = lo + this.rand() * (hi - lo)
+      }
+    } else {
+      if (near) {
+        c.tx = c.x - lo > hi - c.x ? lo : hi
+        want = S.speed * 2.5
+        c.wait = 0
+      } else if (dt > 0 && c.wait <= 0 && this.rand() < dt * 0.08 && bhi - blo > hi - lo + 20) {
+        const left = P.x0 - blo
+        const right = bhi - P.x1
+        c.land = true
+        c.home = false
+        c.landT = 3 + this.rand() * 4
+        c.tx = right > 8 && (left <= 8 || this.rand() < 0.5) ? P.x1 + 4 + this.rand() * (right - 4) : blo + this.rand() * Math.max(1, left - 4)
+      }
+      if (!c.land && (c.tx < lo || c.tx > hi)) c.tx = lo + this.rand() * (hi - lo)
     }
-    if (c.tx < lo || c.tx > hi) c.tx = lo + this.rand() * (hi - lo)
     const dir = Math.sign(c.tx - c.x) || c.face
     if (c.turnT >= 0) want = 0
     c.spd += (want - c.spd) * Math.min(1, dt * 3)
     if (c.turnT < 0 && dir === c.face) c.x += dir * c.spd * dt
-    c.x = Math.min(hi, Math.max(lo, c.x))
+    c.x = Math.min(c.land ? bhi : hi, Math.max(c.land ? blo : lo, c.x))
+    const ashore = c.x < P.x0 || c.x > P.x1
+    const ty = ashore ? landY : swimY + (dt ? Math.sin(this.t * 1.6 + c.phase) * 1.5 : 0)
+    c.y = dt > 0 && c.y > -500 ? c.y + (ty - c.y) * Math.min(1, dt * 6) : ty
     c.h = dir > 0 ? 0 : Math.PI
-    if (dt && Math.abs(c.tx - c.x) < 4) {
-      c.tx = lo + this.rand() * (hi - lo)
-      if (this.rand() < S.pauseChance) c.wait = S.pause[0] + this.rand() * (S.pause[1] - S.pause[0])
+    if (dt > 0 && Math.abs(c.tx - c.x) < 4) {
+      if (c.land && !c.home) {
+        c.wait = 0.6 + this.rand() * 1.5
+        c.tx = c.x > P.x1 ? P.x1 + 4 + this.rand() * Math.max(1, bhi - P.x1 - 4) : blo + this.rand() * Math.max(1, P.x0 - blo - 4)
+      } else if (!c.land) {
+        c.tx = lo + this.rand() * (hi - lo)
+        if (this.rand() < S.pauseChance) c.wait = S.pause[0] + this.rand() * (S.pause[1] - S.pause[0])
+      }
     }
     c.idle = c.wait > 0 && c.spd < 6 ? c.idle + dt : 0
     this.turnUpdate(c, dt, dir * Math.max(c.spd, 10))
@@ -891,6 +930,56 @@ const SCENES = {
   deepdark: { sky: 'rgba(20,90,110,0.16)', shape: 'hills', pulse: true, layers: [['rgba(40,80,100,0.16)', 0.18, 0.6], ['rgba(30,110,130,0.2)', 0.08, 1.5]],
     props: [['sensor', 4], ['shrieker', 2], ['citywall', 1]], p: 'sculk', n: 22, pc: [90, 240, 250] }
 }
+// Three layouts per world; one is picked each time you enter it (stable until you leave).
+const VARIANTS = {
+  overworld: [
+    { name: 'meadow', props: [['flowers', 4], ['oak', 1], ['birch', 1]], gap: [18, 60] },
+    { name: 'forest', props: [['oak', 3], ['oak2', 3], ['oak3', 2], ['birch', 1]], gap: [3, 16], backProps: [['oak3', 2], ['oak', 1]] },
+    { name: 'birch', props: [['birch', 3], ['birch2', 3], ['flowers', 2]], gap: [8, 30], backProps: [['birch2', 1]] }
+  ],
+  cherry: [
+    { name: 'slope', props: [['cherry', 2], ['cherry3', 1], ['flowers', 3]], gap: [20, 60] },
+    { name: 'grove', props: [['cherry', 3], ['cherry2', 3], ['cherry3', 2]], gap: [2, 14], backProps: [['cherry2', 2]] },
+    { name: 'pond', pools: 1, layers: [['rgba(150,80,120,0.16)', 0.16, 0.6], ['rgba(190,110,150,0.2)', 0.10, 0]],
+      props: [['cherry3', 2], ['cherry', 2], ['flowers', 2]], gap: [10, 40] }
+  ],
+  snow: [
+    { name: 'taiga', props: [['spruce', 3], ['spruce2', 3], ['spruce3', 2]], gap: [3, 16], backProps: [['spruce2', 2]] },
+    { name: 'tundra', shape: 'hills', layers: [['rgba(110,130,180,0.14)', 0.10, 1], ['rgba(160,180,220,0.2)', 0.07, 2.5]],
+      props: [['igloo', 1], ['spruce3', 2]], gap: [40, 110] },
+    { name: 'peaks', layers: [['rgba(110,130,180,0.18)', 0.30, 0.8], ['rgba(160,180,220,0.22)', 0.16, 2]], props: [['spruce3', 2], ['spruce', 1]], gap: [30, 80] }
+  ],
+  nether: [
+    { name: 'crimson', props: [['crimson', 3], ['crimson2', 3], ['crimson3', 2]], gap: [4, 20], p: 'spore', pc: [255, 90, 90], n: 30 },
+    { name: 'warped', sky: 'rgba(40,140,130,0.18)', props: [['warped', 3], ['warped2', 3], ['warped3', 2]], gap: [4, 20], p: 'spore', pc: [90, 230, 210], n: 30 },
+    { name: 'basalt', props: [], p: 'ash', pc: [190, 190, 196], n: 55, layers: [['rgba(90,80,90,0.2)', 0.28, 1], ['rgba(120,100,100,0.22)', 0.16, 2.5]] }
+  ],
+  ocean: [
+    { name: 'kelp', props: [['kelp', 3], ['kelp2', 2], ['kelp3', 3], ['seagrass2', 2]], gap: [2, 14], backProps: [['kelp3', 2]] },
+    { name: 'reef', props: [['coral', 3], ['coral2', 3], ['seagrass', 2], ['kelp2', 1]], gap: [4, 20] },
+    { name: 'sand', layers: [['rgba(60,110,130,0.14)', 0.08, 1], ['rgba(200,190,140,0.18)', 0.05, 2]], props: [['seagrass', 3], ['seagrass2', 1], ['coral2', 1]], gap: [30, 90] }
+  ],
+  lush: [
+    { name: 'pools' },
+    { name: 'dripleaf', pools: 1, props: [['dripleaf', 4], ['azalea', 1]], gap: [6, 24] },
+    { name: 'azalea', props: [['azalea2', 3], ['azalea', 2]], gap: [6, 26], ceil: { color: 'rgba(80,110,90,0.22)', frac: 0.14, props: [['berryvine', 4], ['vine', 1]] } }
+  ],
+  desert: [
+    { name: 'dunes', props: [['cactus', 3], ['cactus2', 2], ['deadbush', 3]], gap: [14, 50] },
+    { name: 'temple', props: [['temple', 1], ['cactus3', 2], ['deadbush', 2]], gap: [30, 80] },
+    { name: 'flats', layers: [['rgba(200,160,100,0.14)', 0.07, 1], ['rgba(230,200,130,0.2)', 0.05, 2.5]], props: [['deadbush', 4], ['cactus3', 1]], gap: [24, 70] }
+  ],
+  mushroom: [
+    { name: 'forest', props: [['redshroom', 3], ['redshroom2', 2], ['brownshroom', 2], ['brownshroom2', 1]], gap: [2, 14], backProps: [['redshroom2', 1]] },
+    { name: 'fields', props: [['redshroom', 1], ['brownshroom', 1], ['brownshroom2', 1]], gap: [40, 100] },
+    { name: 'brown', props: [['brownshroom2', 3], ['brownshroom', 2], ['redshroom2', 1]], gap: [6, 26] }
+  ],
+  deepdark: [
+    { name: 'city', props: [['citywall', 3], ['sensor', 2]], gap: [6, 30] },
+    { name: 'sculk', props: [['sensor', 4], ['shrieker', 3]], gap: [10, 34], n: 34 },
+    { name: 'cave', props: [['sensor', 2], ['shrieker', 1]], gap: [20, 60], ceil: { color: 'rgba(40,60,70,0.22)', frac: 0.14, props: [['dripstone', 1]] } }
+  ]
+}
 
 export class Scene {
   constructor(seed = Date.now(), getMode = () => 'main') {
@@ -939,6 +1028,7 @@ export class Scene {
     }
     const world = SCENES[worldOf()] ? worldOf() : 'overworld'
     const mode = world === 'end' ? this.getMode() || 'main' : ''
+    if (world !== this.world || mode !== this.mode) this.vi = null
     if (resized || world !== this.world || mode !== this.mode) {
       this.world = world
       this.mode = mode
@@ -976,7 +1066,9 @@ export class Scene {
   }
 
   build() {
-    const cfg = SCENES[this.world]
+    const vs = VARIANTS[this.world] || []
+    if (this.vi == null || this.vi >= vs.length) this.vi = vs.length ? Math.floor(this.rand() * vs.length) : -1
+    const cfg = (this.cfg = vs.length ? Object.assign({}, SCENES[this.world], vs[this.vi]) : SCENES[this.world])
     const LW = Math.max(1, Math.ceil(this.rect.w / PX))
     const LH = Math.max(1, Math.ceil(this.rect.h / PX))
     this.low.width = LW
@@ -986,27 +1078,30 @@ export class Scene {
     const L = LW * 2
     this.layers = cfg.layers.map(([color, frac, speed], i) => ({ color, speed, L, hts: this.heights(cfg.shape, L, LH * frac, i), props: [] }))
     const front = this.layers[this.layers.length - 1]
-    if (front && cfg.props) {
-      const total = cfg.props.reduce((a, [, w]) => a + w, 0)
+    const scatter = (layer, list, gap) => {
+      if (!layer || !list || !list.length) return
+      const total = list.reduce((a, [, w]) => a + w, 0)
       let x = 10 + this.rand() * 20
       while (x < L - 30) {
         let r = this.rand() * total
-        let name = cfg.props[0][0]
-        for (const [n, w] of cfg.props) {
+        let name = list[0][0]
+        for (const [n, w] of list) {
           if ((r -= w) <= 0) {
             name = n
             break
           }
         }
-        front.props.push({ name, x: Math.round(x) })
-        x += PROP_BOX[name][2] + 12 + this.rand() * 45
+        layer.props.push({ name, x: Math.round(x), flip: this.rand() < 0.5 })
+        x += PROP_BOX[name][2] + gap[0] + this.rand() * (gap[1] - gap[0])
       }
     }
+    scatter(front, cfg.props, cfg.gap || [12, 57])
+    if (this.layers.length > 1) scatter(this.layers[0], cfg.backProps, [20, 70])
     this.ceil = null
     if (cfg.ceil) {
       const C = { color: cfg.ceil.color, speed: front ? front.speed : 2, L, hts: this.heights('hills', L, LH * cfg.ceil.frac, 5), props: [] }
       const total = cfg.ceil.props.reduce((a, [, w]) => a + w, 0)
-      let x = 6
+      let x = cfg.ceil.props.length ? 6 : L
       while (x < L - 10) {
         let r = this.rand() * total
         let name = cfg.ceil.props[0][0]
@@ -1030,11 +1125,11 @@ export class Scene {
         const x0 = Math.max(2, Math.min(LW - w - 2, Math.round(u * LW - w / 2)))
         let hb = 12
         for (let x = x0; x < x0 + w; x++) hb = Math.max(hb, front.hts[x])
-        front.hts[x0 - 1] = Math.max(front.hts[x0 - 1], hb)
-        front.hts[x0 + w] = Math.max(front.hts[x0 + w], hb)
+        const b = 14
+        for (let x = Math.max(0, x0 - b); x < Math.min(LW, x0 + w + b); x++) front.hts[x] = hb
         for (let x = x0; x < x0 + w; x++) front.hts[x] = hb - d
-        front.props = front.props.filter(p => p.x + PROP_BOX[p.name][2] < x0 - 2 || p.x > x0 + w + 2)
-        this.poolList.push({ x0, w, hb, d })
+        front.props = front.props.filter(p => p.x + PROP_BOX[p.name][2] < x0 - b - 2 || p.x > x0 + w + b + 2)
+        this.poolList.push({ x0, w, hb, d, b })
       }
     }
     this.parts = Array.from({ length: cfg.n }, () => this.particle(cfg.p, true))
@@ -1047,7 +1142,7 @@ export class Scene {
     if (this.mode === 'main') {
       const ground = Array.from({ length: LW }, (_, x) =>
         Math.round(LH * (0.09 + 0.03 * Math.sin((x / LW) * Math.PI * 3) + 0.015 * Math.sin(x / 7))))
-      const n = 7
+      const n = [5, 7, 9][Math.floor(r() * 3)]
       const pillars = []
       for (let i = 0; i < n; i++) {
         const u = (i + 0.5) / n
@@ -1057,7 +1152,12 @@ export class Scene {
       }
       return { mode: 'main', ground, pillars }
     }
-    const defs = [[0.12, 0.70, 0.20], [0.86, 0.60, 0.20], [0.50, 0.86, 0.28], [0.16, 0.30, 0.11], [0.84, 0.24, 0.12]]
+    const layouts = [
+      [[0.12, 0.70, 0.20], [0.86, 0.60, 0.20], [0.50, 0.86, 0.28], [0.16, 0.30, 0.11], [0.84, 0.24, 0.12]],
+      [[0.20, 0.82, 0.30], [0.80, 0.78, 0.16], [0.88, 0.40, 0.14], [0.10, 0.45, 0.12], [0.55, 0.22, 0.10]],
+      [[0.14, 0.58, 0.16], [0.82, 0.84, 0.30], [0.46, 0.74, 0.14], [0.30, 0.26, 0.12], [0.88, 0.34, 0.10]]
+    ]
+    const defs = layouts[Math.floor(r() * layouts.length)]
     const islands = defs.map(([u, v, wf]) => {
       const w = Math.max(12, Math.round(LW * wf))
       const rows = []
@@ -1123,7 +1223,9 @@ export class Scene {
       x0: this.rect.x + P.x0 * PX,
       x1: this.rect.x + (P.x0 + P.w) * PX,
       top: this.rect.y + (this.LH - P.hb) * PX,
-      bottom: this.rect.y + (this.LH - P.hb + P.d) * PX
+      bottom: this.rect.y + (this.LH - P.hb + P.d) * PX,
+      bank0: this.rect.x + Math.max(0, P.x0 - P.b) * PX,
+      bank1: this.rect.x + Math.min(this.LW, P.x0 + P.w + P.b) * PX
     }))
   }
 
@@ -1139,11 +1241,19 @@ export class Scene {
     return out
   }
 
-  prop(g, name, x, y, alpha) {
+  prop(g, name, x, y, alpha, flip = false) {
     if (!(this.sheet.complete && this.sheet.naturalWidth)) return
     const [bx, by, w, h] = PROP_BOX[name]
     g.globalAlpha = alpha
-    g.drawImage(this.sheet, bx, by, w, h, Math.round(x), Math.round(y), w, h)
+    if (flip) {
+      g.save()
+      g.translate(Math.round(x) + w, Math.round(y))
+      g.scale(-1, 1)
+      g.drawImage(this.sheet, bx, by, w, h, 0, 0, w, h)
+      g.restore()
+    } else {
+      g.drawImage(this.sheet, bx, by, w, h, Math.round(x), Math.round(y), w, h)
+    }
     g.globalAlpha = 1
   }
 
@@ -1186,6 +1296,10 @@ export class Scene {
       p.vy = -(1 + r() * 2)
       p.vx = (r() - 0.5) * 0.6
       p.life = anywhere ? r() : 1
+    } else if (type === 'ash') {
+      p.vy = 2 + r() * 3
+      p.vx = -1 + (r() - 0.5) * 2
+      if (!anywhere) p.y = -1
     } else {
       p.vy = -(0.6 + r() * 1.4)
       p.vx = (r() - 0.5) * 0.6
@@ -1241,7 +1355,7 @@ export class Scene {
     this.last = now
     const still = this.reduced?.matches
     if (!still) this.t += dt
-    const cfg = SCENES[this.world]
+    const cfg = this.cfg || SCENES[this.world]
     const { lctx: g, LW, LH } = this
     g.clearRect(0, 0, LW, LH)
     const sky = g.createLinearGradient(0, 0, 0, LH)
@@ -1296,7 +1410,7 @@ export class Scene {
         if (x > layer.L - w) x -= layer.L
         if (x > LW || x < -w) continue
         const hh = layer.hts[(pr.x + (w >> 1)) % layer.L]
-        this.prop(g, pr.name, x, LH - hh - h + 1, 0.5)
+        this.prop(g, pr.name, x, LH - hh - h + 1, layer === this.layers[this.layers.length - 1] ? 0.5 : 0.28, pr.flip)
       }
     })
     for (const P of this.poolList || []) {
@@ -1325,7 +1439,7 @@ export class Scene {
     const [cr, cg, cb] = cfg.pc
     this.parts.forEach((p, i) => {
       if (!still) {
-        p.x += (p.vx + (cfg.p === 'petal' || cfg.p === 'bubble' ? Math.sin(this.t * 1.5 + p.ph) * 2 : 0)) * dt
+        p.x += (p.vx + (cfg.p === 'petal' || cfg.p === 'bubble' || cfg.p === 'ash' ? Math.sin(this.t * 1.5 + p.ph) * 2 : 0)) * dt
         p.y += p.vy * dt
         if (cfg.p === 'ember') p.life -= dt * 0.25
         if (cfg.p === 'sculk') p.life -= dt * 0.15
@@ -1340,6 +1454,7 @@ export class Scene {
       if (cfg.p === 'firefly' || cfg.p === 'mote' || cfg.p === 'spore') a = 0.25 + 0.6 * Math.max(0, Math.sin(this.t * 2 + p.ph))
       if (cfg.p === 'ember') a = Math.max(0, p.life) * 0.95
       if (cfg.p === 'sculk') a = Math.max(0, p.life) * 0.7
+      if (cfg.p === 'ash') a = 0.5
       g.fillStyle = `rgba(${cr},${cg},${cb},${a.toFixed(3)})`
       g.fillRect(Math.round(p.x), Math.round(p.y), p.s, p.s)
     })

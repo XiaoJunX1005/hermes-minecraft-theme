@@ -346,12 +346,232 @@ def citywall() -> Spr:
     return s
 
 
+OAK_LEAF = [(120, 190, 90, 255), (84, 150, 64, 255), (56, 110, 46, 255)]
+PINK_LEAF = [(255, 210, 230, 255), (240, 160, 200, 255), (210, 120, 170, 255)]
+TRUNK = (110, 80, 50, 255)
+
+
+def oak_wide() -> Spr:
+    """Low, wide oak with a two-lobed canopy."""
+    s = Spr(30, 22)
+    s.rect(14, 11, 3, 11, TRUNK)
+    s.rect(10, 13, 4, 1, TRUNK)
+    s.rect(17, 12, 4, 1, TRUNK)
+    s.blob(9, 8, 8, 6, OAK_LEAF, 11)
+    s.blob(20, 7, 9, 6, OAK_LEAF, 12)
+    s.blob(15, 5, 7, 5, OAK_LEAF, 13)
+    return s
+
+
+def oak_tall() -> Spr:
+    """Tall narrow oak."""
+    s = Spr(18, 34)
+    s.rect(8, 16, 3, 18, TRUNK)
+    s.blob(9, 10, 8, 10, OAK_LEAF, 14)
+    return s
+
+
+def birch_tall() -> Spr:
+    s = Spr(12, 36)
+    for y in range(13, 36):
+        s.rect(5, y, 2, 1, (60, 60, 60, 255) if y % 5 == 0 else (232, 232, 222, 255))
+    s.blob(6, 8, 5, 8, [(176, 214, 116, 255), (138, 186, 86, 255), (100, 146, 64, 255)], 15)
+    return s
+
+
+def cherry_tall() -> Spr:
+    s = Spr(22, 30)
+    s.rect(10, 13, 3, 17, (70, 44, 52, 255))
+    s.rect(7, 16, 3, 1, (70, 44, 52, 255))
+    s.blob(11, 8, 10, 8, PINK_LEAF, 16)
+    for x, y in ((2, 13), (19, 14), (4, 16)):
+        s.p(x, y, (240, 160, 200, 255))
+    return s
+
+
+def cherry_lean() -> Spr:
+    """Cherry tree leaning to one side with a drooping canopy."""
+    s = Spr(32, 26)
+    for y in range(9, 26):
+        x = 9 + (26 - y) // 3
+        s.rect(x, y, 3, 1, (70, 44, 52, 255))
+    s.blob(19, 7, 12, 6, PINK_LEAF, 17)
+    for x, y in ((8, 11), (10, 13), (28, 12), (30, 14), (25, 14)):
+        s.p(x, y, (240, 160, 200, 255))
+    return s
+
+
+def spruce_v(W, H, tiers, snow=True) -> Spr:
+    s = Spr(W, H)
+    cx = W // 2
+    s.rect(cx - 1, H - 7, 2, 7, (90, 60, 40, 255))
+    for (y, half) in tiers:
+        for k in range(6):
+            w = round(half * (k + 1) / 6)
+            for x in range(cx - w, cx + w):
+                edge = k == 0 or x in (cx - w, cx + w - 1)
+                s.p(x, y + k, (225, 240, 255, 255) if snow and edge and k < 2 else (40, 90, 66, 255) if x < cx else (30, 70, 52, 255))
+    s.rect(cx - 1, max(0, tiers[0][0] - 2), 2, 2, (225, 240, 255, 255))
+    return s
+
+
+def huge_fungus(crimson, W, H, cap, stem_w, lean, seed, vines) -> Spr:
+    """Huge crimson / warped fungus: thick stem, wide wart-block cap with a ragged rim,
+    shroomlights, weeping vines (crimson) or twisting vines (warped)."""
+    rng = random.Random(seed)
+    s = Spr(W, H)
+    cx = W // 2
+    stem, stem_l = ((116, 38, 58, 255), (160, 70, 92, 255)) if crimson else ((36, 110, 112, 255), (70, 160, 156, 255))
+    for y in range(cap - 2, H):
+        t = (y - cap) / max(1, H - cap)
+        x = round(cx - stem_w / 2 + lean * (1 - t))
+        s.rect(x, y, stem_w, 1, stem)
+        s.p(x, y, stem_l)
+    caps = [(220, 60, 54, 255), (178, 34, 40, 255), (126, 22, 30, 255)] if crimson else \
+           [(46, 196, 176, 255), (26, 150, 142, 255), (18, 108, 104, 255)]
+    capx = cx + lean
+    half = W / 2 - 0.5
+    for x in range(W):
+        dx = (x - capx) / half
+        if abs(dx) > 1:
+            continue
+        top = round(cap * 0.35 * dx * dx)
+        bot = cap - 1 + (rng.randint(0, 3) if abs(dx) > 0.35 else rng.randint(0, 1))
+        for y in range(top, bot):
+            k = dx * 0.45 + (y / cap) * 0.8 + rng.uniform(-0.25, 0.25)
+            s.p(x, y, caps[0] if k < 0.25 else caps[1] if k < 0.75 else caps[2])
+    for _ in range(2 + rng.randint(0, 2)):
+        x = capx + rng.randint(-W // 3, W // 3 - 1)
+        y = rng.randint(max(1, cap // 3), cap - 3)
+        s.rect(x, y, 2, 2, (255, 196, 104, 255))
+        s.p(x, y, (255, 242, 196, 255))
+    for _ in range(vines):
+        x = capx + rng.randint(-W // 2 + 2, W // 2 - 3)
+        if crimson:
+            for y in range(cap, min(H - 3, cap + rng.randint(4, 11))):
+                s.p(x, y, (196, 40, 52, 255))
+        else:
+            for k in range(rng.randint(5, 12)):
+                s.p(x + (1 if (k // 2) % 2 else 0), H - 1 - k, (40, 176, 156, 255))
+    return s
+
+
+def kelp_v(H, ph) -> Spr:
+    s = Spr(10, H)
+    stalk, leaf, lit = (60, 120, 60, 255), (80, 150, 70, 255), (120, 190, 100, 255)
+    for y in range(H):
+        x = 4 + round(math.sin(y / 4 + ph) * 1.2)
+        s.rect(x, y, 2, 1, stalk)
+        if y % 4 == 1:
+            side = -1 if (y // 4) % 2 else 1
+            for k in range(1, 4):
+                s.p(x + (1 + k if side > 0 else -k), y + (k > 1), leaf)
+    s.rect(3, 0, 4, 2, lit)
+    return s
+
+
+def coral_fan() -> Spr:
+    """Fan coral + brain coral."""
+    s = Spr(20, 12)
+    fan = (180, 90, 220, 255)
+    for y in range(9):
+        w = 1 + (8 - y) // 2
+        for x in range(5 - w, 5 + w + 1):
+            if (x + y) % 3:
+                s.p(x, y + 1, fan)
+    s.rect(4, 9, 2, 3, fan)
+    for y in range(6, 12):
+        for x in range(9, 19):
+            if ((x - 13.5) / 5) ** 2 + ((y - 11) / 5) ** 2 <= 1:
+                s.p(x, y, (240, 120, 150, 255) if (x + y) % 2 else (210, 90, 120, 255))
+    return s
+
+
+def seagrass_tall() -> Spr:
+    s = Spr(8, 22)
+    for x, h, c in ((1, 22, (90, 170, 90, 255)), (3, 16, (110, 190, 100, 255)), (5, 20, (80, 160, 80, 255))):
+        for y in range(22 - h, 22):
+            s.p(x + (1 if (y // 6) % 2 else 0), y, c)
+    return s
+
+
+def cactus_one() -> Spr:
+    s = Spr(10, 26)
+    g, lit = (80, 150, 60, 255), (110, 180, 80, 255)
+    s.rect(3, 0, 4, 26, g)
+    s.rect(3, 0, 1, 26, lit)
+    s.rect(7, 13, 2, 2, g)
+    s.rect(8, 7, 2, 7, g)
+    for y in range(3, 26, 4):
+        s.p(6, y, (40, 80, 30, 255))
+    return s
+
+
+def cactus_plain() -> Spr:
+    s = Spr(6, 30)
+    s.rect(1, 0, 4, 30, (80, 150, 60, 255))
+    s.rect(1, 0, 1, 30, (110, 180, 80, 255))
+    for y in range(3, 30, 4):
+        s.p(4, y, (40, 80, 30, 255))
+    return s
+
+
+def redshroom_tall() -> Spr:
+    s = Spr(16, 28)
+    s.rect(6, 8, 4, 20, (232, 226, 210, 255))
+    for y in range(9):
+        half = round(8 * math.sqrt(max(0.0, 1 - ((y - 8) / 8.5) ** 2)))
+        for x in range(8 - half, 8 + half):
+            s.p(x, y, (210, 50, 40, 255) if x < 10 else (176, 34, 30, 255))
+    for x, y in ((4, 4), (9, 2), (11, 6), (6, 6)):
+        s.rect(x, y, 2, 2, (245, 245, 240, 255))
+    return s
+
+
+def brownshroom_wide() -> Spr:
+    s = Spr(34, 18)
+    s.rect(15, 6, 4, 12, (232, 226, 210, 255))
+    s.rect(0, 2, 34, 4, (170, 120, 80, 255))
+    s.rect(2, 1, 30, 1, (196, 146, 100, 255))
+    s.rect(0, 5, 34, 1, (130, 90, 60, 255))
+    return s
+
+
+def azalea_tree() -> Spr:
+    s = Spr(22, 24)
+    s.rect(10, 12, 2, 12, (110, 80, 50, 255))
+    s.rect(7, 15, 3, 1, (110, 80, 50, 255))
+    s.blob(11, 7, 10, 6, [(130, 190, 80, 255), (96, 150, 60, 255), (70, 115, 46, 255)], 18)
+    for x, y in ((5, 4), (11, 2), (16, 6), (8, 8), (14, 9)):
+        s.rect(x, y, 2, 2, (240, 140, 210, 255))
+    return s
+
+
+def dripstone() -> Spr:
+    """Pointed dripstone hanging from a cave ceiling."""
+    s = Spr(12, 16)
+    for x0, h in ((0, 12), (4, 8), (7, 16), (10, 6)):
+        for y in range(h):
+            w = max(1, round(2.5 * (1 - y / h)))
+            s.rect(x0 + (2 - w // 2) - 1, y, w, 1, (150, 120, 100, 255) if y % 3 else (120, 96, 80, 255))
+    return s
+
+
 PROPS = {"oak": oak, "birch": birch, "flowers": flowers, "cherry": cherry, "spruce": spruce, "igloo": igloo,
          "crimson": lambda: fungus(True), "warped": lambda: fungus(False), "chorus": chorus, "endcity": endcity,
          "crystal": crystal, "portal": portal,
          "kelp": kelp, "seagrass": seagrass, "coral": coral, "azalea": azalea, "dripleaf": dripleaf, "vine": vine,
          "berryvine": berryvine, "cactus": cactus, "deadbush": deadbush, "temple": temple, "redshroom": redshroom,
-         "brownshroom": brownshroom, "sensor": sensor, "shrieker": shrieker, "citywall": citywall}
+         "brownshroom": brownshroom, "sensor": sensor, "shrieker": shrieker, "citywall": citywall,
+         "oak2": oak_wide, "oak3": oak_tall, "birch2": birch_tall, "cherry2": cherry_tall, "cherry3": cherry_lean,
+         "spruce2": lambda: spruce_v(14, 38, [(3, 2), (8, 3), (13, 4), (18, 5), (23, 6), (28, 7)]),
+         "spruce3": lambda: spruce_v(12, 22, [(3, 2), (7, 4), (11, 5), (15, 6)]),
+         "crimson": lambda: huge_fungus(True, 30, 36, 14, 4, 0, 1, 4), "crimson2": lambda: huge_fungus(True, 24, 30, 11, 3, 2, 2, 3),
+         "crimson3": lambda: huge_fungus(True, 26, 44, 13, 3, -2, 3, 5), "warped": lambda: huge_fungus(False, 30, 36, 14, 4, 0, 4, 4),
+         "warped2": lambda: huge_fungus(False, 24, 30, 11, 3, -2, 5, 3), "warped3": lambda: huge_fungus(False, 26, 44, 13, 3, 2, 6, 5),
+         "kelp2": lambda: kelp_v(22, 1.3), "kelp3": lambda: kelp_v(40, 2.6), "coral2": coral_fan, "seagrass2": seagrass_tall,
+         "cactus2": cactus_one, "cactus3": cactus_plain, "redshroom2": redshroom_tall, "brownshroom2": brownshroom_wide,
+         "azalea2": azalea_tree, "dripstone": dripstone}
 
 
 def atlas():

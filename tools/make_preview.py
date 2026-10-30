@@ -47,21 +47,21 @@ main{display:flex;flex-direction:column;min-width:0}
 <body><div class="app">
 <aside data-slot="sidebar">
   <h6>SESSIONS</h6>
-  <button data-slot="row-button" data-active="true">⛏ Minecraft theme</button>
-  <button data-slot="row-button">🧱 Build a redstone clock</button>
-  <button data-slot="row-button">📖 Enchanting guide</button>
+  <button data-slot="row-button" data-active="true">📝 今日筆記</button>
+  <button data-slot="row-button">📊 Weekly report</button>
+  <button data-slot="row-button">✈ 旅行計畫</button>
   <div style="flex:1"></div>
-  <button data-slot="button" data-variant="default">+ New world</button>
+  <button data-slot="button" data-variant="default">+ New chat</button>
 </aside>
 <main>
   <div data-slot="aui_thread-viewport">
-    <div data-slot="aui_intro"><div class="wordmark">Hermes</div><p>What should we build today?</p></div>
-    <div data-slot="aui_user-message-root"><div class="composer-human-message">幫我做一個 Minecraft 主題</div></div>
+    <div data-slot="aui_intro"><div class="wordmark">Hermes</div><p>What can I help with today?</p></div>
+    <div data-slot="aui_user-message-root"><div class="composer-human-message">幫我整理今天的筆記，列出待辦事項</div></div>
     <div data-slot="aui_assistant-message-content">
-      <h2>Crafting your theme</h2>
-      <p>Placing <strong>grass blocks</strong>, polishing <code>stone</code> buttons and adding an <a href="#">enchanted glint</a>.</p>
-      <div data-slot="tool-block">┃ ⛏ terminal  python tools/build_skin.py</div>
-      <div data-slot="aui_response-loading" data-message-streaming="true">mining…</div>
+      <h2>今日重點 · Today</h2>
+      <ul><li>完成 README 改版 — <strong>done</strong></li><li>Review PR <code>#42</code>（設定檔重構）</li><li>週五前回覆 <a href="#">design review</a></li></ul><pre style="margin:8px 0;padding:8px 10px;background:rgba(0,0,0,.45);border:1px solid #000;font:13px Consolas,monospace;color:#cfe8cf">git checkout -b notes/2026-10-30</pre>
+      <div data-slot="tool-block">┃ 📖 read_file  notes/today.md</div>
+      <div data-slot="aui_response-loading" data-message-streaming="true">整理中…</div>
     </div>
   </div>
   <div data-slot="composer-surface"><div data-slot="composer-rich-input">Send a message…</div></div>
