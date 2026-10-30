@@ -259,7 +259,7 @@ def _blend(dst: RGBA, src: RGBA) -> RGBA:
 
 def render(parts: list[Part], under: Optional[FX] = None, over: Optional[FX] = None, flash: float = 0.0,
            flash_rgb: RGB = (255, 255, 255), outline: RGB = (14, 30, 14), outline_soft: Optional[RGB] = None,
-           dissolve: float = 0.0) -> Image.Image:
+           dissolve: float = 0.0, keep: tuple[int, ...] = ()) -> Image.Image:
     N = GRID_W * GRID_H
     col: list[Optional[RGB]] = [None] * N
     dep = [1e9] * N
@@ -337,8 +337,11 @@ def render(parts: list[Part], under: Optional[FX] = None, over: Optional[FX] = N
             out[i] = (outline_soft[0], outline_soft[1], outline_soft[2], 210)
     if dissolve > 0:
         for i in range(N):
-            if out[i] is not None and hash2(i % GRID_W, i // GRID_W, 977) < dissolve:
-                out[i] = None
+            if out[i] is None or hash2(i % GRID_W, i // GRID_W, 977) >= dissolve:
+                continue
+            if pid[i] in keep or (col[i] is None and any(pid[j] in keep for j in nbrs(i))):
+                continue  # spared part and its outline
+            out[i] = None
     data: list[RGBA] = []
     for i in range(N):
         xy = (i % GRID_W, i // GRID_W)

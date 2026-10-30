@@ -59,20 +59,24 @@ skin="${HMT_SKIN:-}"
 if [ -z "$skin" ]; then
   case " $SKINS " in *" $cur_skin "*) skin="$cur_skin" ;; *) skin="minecraft" ;; esac
 fi
-pet="${HMT_PET:-}"
-want_pet="$cur_pet"
-case "$cur_pet" in
-    creeper-blocky) want_pet=creeper ;;
-    creeper-carved) want_pet=creeper ;;
-    creeper-tall) want_pet=creeper ;;
-    creeper-buddy) want_pet=creeper ;;
-    lantern-buddy) want_pet=lantern ;;
-    mc-pig) want_pet=pig ;;
-    mc-chicken) want_pet=chicken ;;
-    mc-slime) want_pet=slime ;;
-    mc-bee) want_pet=bee ;;
-    mc-enderman) want_pet=enderman ;;
-esac
+new_slug() {
+  case "$1" in
+    creeper-blocky) echo creeper ;;
+    creeper-carved) echo creeper ;;
+    creeper-tall) echo creeper ;;
+    creeper-buddy) echo creeper ;;
+    lantern-buddy) echo lantern ;;
+    mc-pig) echo pig ;;
+    mc-chicken) echo chicken ;;
+    mc-slime) echo slime ;;
+    mc-bee) echo bee ;;
+    mc-enderman) echo enderman ;;
+    *) echo "$1" ;;
+  esac
+}
+# old slugs (from earlier versions) map to the species that replaced them
+pet="$(new_slug "${HMT_PET:-}")"
+want_pet="$(new_slug "$cur_pet")"
 if [ -z "$pet" ]; then
   if [ -n "$want_pet" ] && [ -d "$HOME_DIR/pets/$want_pet" ]; then pet="$want_pet"; else pet="creeper"; fi
 fi

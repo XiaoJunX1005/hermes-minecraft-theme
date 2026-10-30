@@ -422,6 +422,14 @@ def slime_core_tex(eyes: str, look: float) -> P.Tex:
         if face != "front":
             return None
         sh = round(look)
+        if eyes == "x":  # bold 2-px X eyes and a wobbly frown, on a lighter core for contrast
+            for ex in (3 + sh, 13 + sh):
+                if ex <= u < ex + 6 and 5 <= v < 11:
+                    x, y = u - ex, v - 5
+                    return SL_FACE if (x - y) in (0, 1) or (x + y) in (4, 5) else 0.25
+            if (8 + sh <= u < 14 + sh and v == 14) or (u in (8 + sh, 13 + sh) and v == 15) or (u in (10 + sh, 11 + sh) and v == 13):
+                return SL_FACE
+            return 0.22
         for ex in (4 + sh, 14 + sh):
             if ex <= u < ex + 4 and 5 <= v < 10:
                 x, y = u - ex, v - 5
@@ -448,14 +456,17 @@ def slime_shell_tex(face, u, v, W, H):
     return None
 
 
-def slime_alpha(face, u, v, W, H):
-    return 0.82 if (u <= 0 or v <= 0 or u >= W - 1 or v >= H - 1) else 0.42
+def slime_alpha(clear: float = 1.0) -> P.Alpha:
+    def a(face, u, v, W, H):
+        edge = u <= 0 or v <= 0 or u >= W - 1 or v >= H - 1
+        return 0.82 if edge else 0.42 * clear
+    return a
 
 
 def slime_parts(yaw=FRONT_YAW, lift=0.0, dx=0.0, sc=(1.0, 1.0, 1.0), roll=0.0, pitch=0.0, cdy=0.0, cdx=0.0,
-                eyes="open", look=0.0) -> list[P.Part]:
+                eyes="open", look=0.0, clear=1.0) -> list[P.Part]:
     root = P.Rig(P.chain(P.rot_y(yaw), P.rot_z(roll), P.rot_x(pitch), P.scale(*sc)), (dx, lift, 0.0))
-    return [root.box("shell", (0, 6.33, 0), (6.33, 6.33, 6.33), slime_shell_tex, SHELL, 1, alpha=slime_alpha),
+    return [root.box("shell", (0, 6.33, 0), (6.33, 6.33, 6.33), slime_shell_tex, SHELL, 1, alpha=slime_alpha(clear)),
             root.box("head", (cdx, 4.0 + cdy, 1.0), (3.67, 3.67, 3.67), slime_core_tex(eyes, look), CORE, 0)]
 
 
@@ -494,7 +505,7 @@ def slime_frame(state: str, f: int) -> Image.Image:
     elif state == "failed":
         sy = [1.0, 0.85, 0.7, 0.56, 0.6, 0.8][f]
         sx = [1.0, 1.1, 1.2, 1.3, 1.28, 1.12][f]
-        kw = dict(sc=(sx, sy, sx), eyes="x" if f >= 2 else "blink", cdy=-0.4 if f >= 2 else 0.0)
+        kw = dict(sc=(sx, sy, sx), eyes="x" if f >= 2 else "blink", cdy=-0.4 if f >= 2 else 0.0, clear=0.5 if f >= 2 else 1.0)
     elif state == "waiting":
         kw = dict(sc=sq(1 + 0.03 * math.sin(2 * p)), look=1.2 * math.sin(p), cdy=0.2 * math.sin(p))
     elif state == "running":
@@ -513,6 +524,17 @@ def slime_frame(state: str, f: int) -> Image.Image:
             a = math.pi + k * math.pi / 5
             r = 12 + age * 4
             P.drop(over, cx + math.cos(a) * r * 1.4, cy + math.sin(a) * r * 0.8 + age * age * 1.5, 255 - age * 45)
+    if state == "failed" and f >= 2:
+        # dizzy face drawn on top of the jelly so it still reads when the pet is scaled down
+        x0, y0, x1, y1 = gbbox(parts, ("head",))
+        cx, cy = (x0 + x1) / 2, y0 + (y1 - y0) * 0.42
+        for ex in (cx - 5, cx + 5):
+            for k in range(-2, 3):
+                for t in (0, 1):
+                    over.put(ex + k + t, cy + k, (14, 38, 16, 255))
+                    over.put(ex + k + t, cy - k, (14, 38, 16, 255))
+        for k in range(-3, 4):
+            over.put(cx + k, cy + 6 - (1 if abs(k) < 2 else 0), (14, 38, 16, 255))
     img = P.render(parts, under, over, outline=(26, 70, 26))
     P.set_ground(93.0)
     return img
@@ -646,6 +668,13 @@ def ender_head_tex(eyes: str, glow: float) -> P.Tex:
     return tex
 
 
+def ender_limb_tex(face, u, v, W, H):
+    """Lit edge on the light-facing corner so the thin limbs still read when the pet is scaled down."""
+    if (face == "front" and u == 0) or (face == "left" and u == W - 1):
+        return 0.3
+    return None
+
+
 def grass_tex(face, u, v, W, H):
     if face == "top":
         return None
@@ -672,10 +701,10 @@ def enderman_parts(yaw=FRONT_YAW, lift=0.0, dx=0.0, sc=(1.0, 1.0, 1.0), roll=0.0
     for k, x in enumerate((-3.67, 3.67)):
         sgn = -1 if x < 0 else 1
         arm = hips.child((x, 8.67, 0), P.chain(P.rot_x(arms[k]), P.rot_z(sgn * spread[k])))
-        parts.append(arm.box(f"arm{k}", (0, -6, 0), (1, 6, 1), None, ENDER, 4 + k))
+        parts.append(arm.box(f"arm{k}", (0, -6, 0), (1, 6, 1), ender_limb_tex, ENDER, 4 + k))
     for k, x in enumerate((-1.33, 1.33)):
         leg = root.child((x, 12, 0), P.rot_x(legs[k]))
-        parts.append(leg.box(f"leg{k}", (0, -6, 0), (1, 6, 1), None, ENDER, 6 + k))
+        parts.append(leg.box(f"leg{k}", (0, -6, 0), (1, 6, 1), ender_limb_tex, ENDER, 6 + k))
     if block:
         parts.append(hips.box("block", (0, 4.33, 11.0), (2.67, 2.67, 2.67), grass_tex, GRASS, 8))
     return parts
@@ -705,7 +734,7 @@ def enderman_frame(state: str, f: int) -> Image.Image:
         w = math.sin(p)
         kw = dict(arms=(0.05, -2.3 - 0.22 * w), spread=(0.0, 0.18 + 0.12 * w), hr=0.1 * w, hy=-0.1)
     elif state == "jumping":
-        dissolve = [0.0, 0.3, 0.62, 0.45, 0.15, 0.0][f]
+        dissolve = [0.0, 0.35, 0.7, 0.5, 0.2, 0.0][f]
         flash = [0.0, 0.55, 0.3, 0.45, 0.15, 0.0][f]
         kw = dict(lift=[0.0, 0.0, 0.6, 1.2, 0.6, 0.0][f], arms=(0.2, -0.2), spread=(0.25, 0.25))
     elif state == "failed":
@@ -731,13 +760,13 @@ def enderman_frame(state: str, f: int) -> Image.Image:
     elif state == "jumping":
         x0, y0, x1, y1 = gbbox(parts, ("body", "head"))
         cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
-        r = [16, 10, 4, 10, 16, 20][f]
+        r = [5, 11, 17, 20, 12, 6][f]
         for k in range(10):
             a = k * TAU / 10 + f * 0.4
             P.portal(over, cx + math.cos(a) * r, cy + math.sin(a) * r * 1.3, 240 if f in (1, 2, 3) else 150)
     elif state in ("failed", "running") or state in WALK:
         ender_particles(over, parts, f, 4 if state == "failed" else 2, alpha=240)
-    return P.render(parts, under, over, flash=flash, flash_rgb=(190, 90, 255), outline=(108, 76, 150), dissolve=dissolve)
+    return P.render(parts, under, over, flash=flash, flash_rgb=(190, 90, 255), outline=(128, 94, 176), dissolve=dissolve, keep=(0,))
 
 
 # ================================================================== lantern =============
@@ -887,7 +916,17 @@ RETIRED = {"creeper-blocky": "creeper", "creeper-carved": "creeper", "creeper-ta
 
 def frames_for(slug: str) -> dict[str, list[Image.Image]]:
     fn = SPECIES[slug]["frame"]
-    return {s: [fn(s, f) for f in range(nframes(s))] for s in STATES}
+    out: dict[str, list[Image.Image]] = {}
+    for s in STATES:
+        fr: list[Image.Image] = []
+        for f in range(nframes(s)):
+            P.set_ground(93.0)
+            try:
+                fr.append(fn(s, f))
+            finally:
+                P.set_ground(93.0)
+        out[s] = fr
+    return out
 
 
 def check(slug: str, frames: dict[str, list[Image.Image]]) -> list[str]:
@@ -904,9 +943,13 @@ def check(slug: str, frames: dict[str, list[Image.Image]]) -> list[str]:
     return bad
 
 
-def build(slug: str) -> dict[str, list[Image.Image]]:
+def build(slug: str) -> list[str]:
+    """Render, validate, and only then write pets/<slug>/ and its preview. Returns the problems found."""
     sp = SPECIES[slug]
     frames = frames_for(slug)
+    bad = check(slug, frames)
+    if bad:
+        return bad
     sheet = Image.new("RGBA", (COLS * P.FRAME_W, len(STATES) * P.FRAME_H), (0, 0, 0, 0))
     for r, s in enumerate(STATES):
         for c, im in enumerate(frames[s]):
@@ -919,7 +962,7 @@ def build(slug: str) -> dict[str, list[Image.Image]]:
     (out / "pet.json").write_text(json.dumps({"id": slug, "displayName": sp["name"], "description": sp["desc"],
                                               "spritesheetPath": "spritesheet.png"}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     preview(slug, frames)
-    return frames
+    return []
 
 
 DURATIONS = [70] * 14 + [60] * 2       # 16 steps = 1100 ms (GIF delays are in 10 ms units)
@@ -987,11 +1030,12 @@ if __name__ == "__main__":
     slugs = sys.argv[1:] or list(SPECIES)
     problems: list[str] = []
     for slug in slugs:
-        fr = build(slug)
-        bad = check(slug, fr)
+        bad = build(slug)
         problems += bad
-        print("built", slug, "ok" if not bad else f"{len(bad)} problems")
-    if not sys.argv[1:]:
-        overview(list(SPECIES))
+        print("built", slug if not bad else f"{slug}: NOT written, {len(bad)} problems")
     for b in problems[:40]:
         print("  ", b)
+    if problems:
+        sys.exit(1)
+    if not sys.argv[1:]:
+        overview(list(SPECIES))

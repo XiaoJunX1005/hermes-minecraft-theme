@@ -54,9 +54,10 @@ function Get-HermesCfg($key) {
 }
 $curSkin = Get-HermesCfg 'display.skin'
 $curPet = Get-HermesCfg 'display.pet.slug'
-$wantPet = if ($retired.ContainsKey($curPet)) { $retired[$curPet] } else { $curPet }
+$wantPet = if ($curPet -and $retired.ContainsKey($curPet)) { $retired[$curPet] } else { $curPet }
+$envPet = if ($env:HMT_PET -and $retired.ContainsKey($env:HMT_PET)) { $retired[$env:HMT_PET] } else { $env:HMT_PET }
 $skin = if ($env:HMT_SKIN) { $env:HMT_SKIN } elseif ($skins -contains $curSkin) { $curSkin } else { 'minecraft' }
-$pet = if ($env:HMT_PET) { $env:HMT_PET } elseif ($wantPet -and (Test-Path "$hhome\pets\$wantPet")) { $wantPet } else { 'creeper' }
+$pet = if ($envPet) { $envPet } elseif ($wantPet -and (Test-Path "$hhome\pets\$wantPet")) { $wantPet } else { 'creeper' }
 if ($skin -ne $curSkin) { & hermes config set display.skin $skin }
 if ($pet -ne $curPet) { & hermes pets select $pet }
 # Pets from older versions (one per species now); only this project's own old folders, after selecting the new one.

@@ -433,6 +433,7 @@ def install(skin: Path, skin_name: str | None = None, pet: str | None = None) ->
             shutil.copytree(d, home / "pets" / d.name, dirs_exist_ok=True)
     skin_name = skin_name or (cur_skin if cur_skin in WORLDS else "minecraft")
     want = RETIRED.get(cur_pet, cur_pet)
+    pet = RETIRED.get(pet, pet) if pet else None
     pet = pet or (want if want and (home / "pets" / want).is_dir() else "creeper")
     if skin_name != cur_skin:
         subprocess.run(["hermes", "config", "set", "display.skin", skin_name], check=False)
