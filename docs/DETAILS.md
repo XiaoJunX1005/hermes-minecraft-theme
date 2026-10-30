@@ -1,6 +1,6 @@
 # 詳細說明
 
-[← 回到 README](../README.md)
+[← 回到 README](../README.md)（[English](../README.en.md)）
 
 README 已列出世界、寵物與活動圖示；這裡是背景場景、生物和自動換世界的細節。
 

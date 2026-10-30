@@ -1,5 +1,7 @@
 <div align="center">
 
+[English](README.en.md) | **繁體中文**
+
 # ⛏ Hermes × Minecraft
 
 非官方的 Minecraft 風格 [Hermes Agent](https://github.com/NousResearch/hermes-agent) 主題：十個會動的世界、在視窗裡遊蕩的生物、跟著工作內容變化的圖示。

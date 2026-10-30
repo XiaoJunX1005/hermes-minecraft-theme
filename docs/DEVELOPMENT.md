@@ -1,6 +1,6 @@
 # 開發說明
 
-[← 回到 README](../README.md)　·　[詳細說明](DETAILS.md)
+[← 回到 README](../README.md)（[English](../README.en.md)）　·　[詳細說明](DETAILS.md)
 
 素材全部由 `tools/` 裡的 Python 程式產生，需要 Python 3.10 以上與 Pillow。請修改 `src/` 或 `tools/`，不要直接改 `skins/*.yaml`（那是產生出來的檔案）。
 
