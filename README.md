@@ -39,7 +39,8 @@ hermes pets select creeper-blocky                 # 寵物；hermes pets off 關
 
 ## 更多
 
-每個世界的場景與生物、寵物列表、活動圖示、怎麼惹毛蜜蜂、開發方式，見 [詳細說明](docs/DETAILS.md)。
+- [詳細說明](docs/DETAILS.md)：每個世界的場景與生物、寵物列表、活動圖示、怎麼惹毛蜜蜂、用另一台電腦連線。
+- [開發說明](docs/DEVELOPMENT.md)：想自己修改主題或重新產生素材時再看。
 
 ## 授權
 
