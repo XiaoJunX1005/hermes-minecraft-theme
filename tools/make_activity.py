@@ -287,11 +287,12 @@ def world_assets():
         key = w["biome"]
         island = bs.sheet_uri(bs.render_island(bs.ISLAND_SIZE, bs.ISLAND_FRAMES, key), 48)
         strip = bs.png_data_uri(bs.tex_grass_strip(*w["strip"]))
+        side = bs.png_data_uri(bs.sidebar_tile(key))
         stars = bs.svg_data_uri(bs.stars_svg().replace('fill="white"', f'fill="{w["star"]}"'))
         clouds = bs.svg_data_uri(bs.clouds_svg().replace('fill="white"', f'fill="{w["cloud"]}"'))
         sel = f'html[data-mc-theme="1"][data-mc-rot="{key}"]'
         rules.append(f'{sel}{{--mc-world:"{key}";--mc-grass:{w["accent"]};--mc-island:url("{island}");'
-                     f'--mc-grass-strip:url("{strip}");--mc-stars:url("{stars}");--mc-clouds:url("{clouds}")}}')
+                     f'--mc-grass-strip:url("{strip}");--mc-sidebar:url("{side}");--mc-stars:url("{stars}");--mc-clouds:url("{clouds}")}}')
         rules.append(f'{sel} [data-slot="aui_intro"]::after{{content:"{w["splash"]}"}}')
         rules.append(f'{sel} [data-slot="aui_intro"]::before{{filter:drop-shadow(0 16px 14px {w["glow"]})}}')
         rules.append(f'{sel} [data-slot="aui_thread-viewport"]{{background-color:{w["tint"]}}}')

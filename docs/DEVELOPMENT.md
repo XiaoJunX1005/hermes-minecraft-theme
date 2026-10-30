@@ -22,6 +22,7 @@ python tools/make_preview.py && python tools/record_gif.py   # 預覽頁與 docs
 | `tools/make_icons.py` | 主題內建的思考中圖示（無插件時使用） |
 | `src/activity-plugin.js` | 活動圖示插件原始碼（`make_activity.py` 會把圖嵌入並輸出到 `desktop-plugins/`） |
 | `tools/pixels.py` | 草地、泥土等材質 |
+| `tools/blocks.py` | 各世界側欄的方塊材質（16×16，壓暗讓文字好讀） |
 | `tools/pet3d.py` | 寵物用的立體方塊渲染器（96×104 像素，可半透明、自發光） |
 | `tools/make_pets.py` | 7 隻寵物的模型、動作與特效 |
 | `tools/critters_art.py` | 飛行生物與界伏蚌的像素圖 |

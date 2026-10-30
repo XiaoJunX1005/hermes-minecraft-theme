@@ -1709,6 +1709,95 @@ export class Rotator {
   }
 }
 
+// ---- pet modes: follow the world / random every few minutes / manual (default) ------------
+// The pet choice is a Hermes setting (display.pet.slug), so a switch here changes it for every
+// app connected to this Hermes. The mode itself is stored per app; it starts as manual.
+export const WORLD_PET = { overworld: 'creeper', cherry: 'bee', snow: 'chicken', nether: 'pig', end: 'enderman',
+  ocean: 'lantern', lush: 'slime', desert: 'creeper', mushroom: 'pig', deepdark: 'lantern' }
+export const PETS = ['creeper', 'pig', 'chicken', 'slime', 'bee', 'enderman', 'lantern']
+const PET_MODES = ['manual', 'world', 'random']
+
+export class PetCycler {
+  constructor(storage, request, now = () => Date.now()) {
+    this.storage = storage
+    this.request = request
+    this.now = now
+    this.rand = Math.random
+    const m = storage?.get?.('petMode', 'manual')
+    this.mode = PET_MODES.includes(m) ? m : 'manual'
+    this.min = 5 * 60 * 1000
+    this.max = 10 * 60 * 1000
+    this.due = 0
+    this.bag = []
+    this.busy = false
+    this.last = ''
+  }
+
+  active() {
+    return typeof document === 'undefined' || document.documentElement.dataset.mcTheme === '1'
+  }
+
+  /** Switch to `slug` unless the pet is turned off (never re-enable it) or already showing. */
+  async select(slug) {
+    if (!slug || this.busy || !this.active()) return false
+    this.busy = true
+    try {
+      const meta = await this.request('pet.info.meta', {})
+      if (!meta || meta.enabled === false) return false
+      if (meta.slug === slug) {
+        this.last = slug
+        return true
+      }
+      await this.request('pet.select', { slug })
+      this.last = slug
+      return true
+    } catch {
+      return false
+    } finally {
+      this.busy = false
+    }
+  }
+
+  onWorld(world) {
+    if (this.mode === 'world' && WORLD_PET[world]) return this.select(WORLD_PET[world])
+    return Promise.resolve(false)
+  }
+
+  pickRandom() {
+    if (!this.bag.length) {
+      this.bag = PETS.filter(p => p !== this.last)
+      for (let i = this.bag.length - 1; i > 0; i--) {
+        const j = Math.floor(this.rand() * (i + 1))
+        ;[this.bag[i], this.bag[j]] = [this.bag[j], this.bag[i]]
+      }
+    }
+    return this.bag.pop()
+  }
+
+  schedule() {
+    this.due = this.now() + this.min + this.rand() * (this.max - this.min)
+  }
+
+  next() {
+    this.schedule()
+    return this.select(this.pickRandom())
+  }
+
+  tick() {
+    if (this.mode !== 'random' || (typeof document !== 'undefined' && document.hidden)) return
+    if (this.now() >= this.due) this.next()
+  }
+
+  setMode(mode, world) {
+    this.mode = PET_MODES.includes(mode) ? mode : 'manual'
+    this.storage?.set?.('petMode', this.mode)
+    this.bag = []
+    if (this.mode === 'world') return this.onWorld(world)
+    if (this.mode === 'random') return this.next()
+    return Promise.resolve(false)
+  }
+}
+
 // ---- theme detection + styles ---------------------------------------------------------
 function detectTheme() {
   const root = document.documentElement
@@ -1775,11 +1864,13 @@ export default {
     critters.perches = () => scene.perches()
     critters.pools = () => scene.pools()
     const wipe = new Wipe()
+    const pets = new PetCycler(ctx.storage, (method, params) => host.request(method, params))
     const rot = new Rotator(ctx.storage, wipe, () => {
       critters.place()
       scene.place()
+      pets.onWorld(rot.world)
     })
-    window.__hmt = { critters, scene, wipe, rot }
+    window.__hmt = { critters, scene, wipe, rot, pets }
     window.__hmtCritters = critters
     critters.place()
     critters.start()
@@ -1790,6 +1881,7 @@ export default {
       detectTheme()
       refresh()
       rot.tick()
+      pets.tick()
       critters.place()
       scene.place()
     }, 2000)
@@ -1818,6 +1910,32 @@ export default {
         label: 'Minecraft：現在換一個世界',
         keywords: ['minecraft', 'world', '世界', 'next', '換'],
         run: () => rot.go()
+      }
+    })
+    const petCmd = (id, label, keywords, mode) =>
+      ctx.register({
+        id,
+        area: PALETTE_AREA,
+        data: {
+          id: `${ID}.${id}`,
+          label,
+          keywords: ['minecraft', 'pet', '寵物', ...keywords],
+          detail: () => (pets.mode === mode ? '開' : '關'),
+          detailVariant: 'state',
+          run: () => pets.setMode(pets.mode === mode && mode !== 'manual' ? 'manual' : mode, rot.world)
+        }
+      })
+    petCmd('pet-world', 'Minecraft：寵物跟著世界換（開／關）', ['world', '世界', '跟著'], 'world')
+    petCmd('pet-random', 'Minecraft：寵物每 5–10 分鐘隨機換（開／關）', ['random', '隨機', '輪流'], 'random')
+    petCmd('pet-manual', 'Minecraft：寵物固定不換（手動選）', ['manual', '手動', '固定'], 'manual')
+    ctx.register({
+      id: 'pet-next',
+      area: PALETTE_AREA,
+      data: {
+        id: `${ID}.pet-next`,
+        label: 'Minecraft：現在隨機換一隻寵物',
+        keywords: ['minecraft', 'pet', '寵物', 'next', '換'],
+        run: () => (pets.mode === 'random' ? pets.next() : pets.select(pets.pickRandom()))
       }
     })
     const subscribe = ctx.onEvent || host.onEvent

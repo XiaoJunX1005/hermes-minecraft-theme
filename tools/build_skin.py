@@ -28,6 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from pixels import DIRT, dirt_hd, grass_side_hd, grass_top_hd, noise_texture, value_noise  # noqa: E402,F401
 from make_pets import RETIRED, hero_pixels  # noqa: E402
 from voxel import render as render_island  # noqa: E402
+from blocks import sidebar_tile  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC, OUT, DOCS = ROOT / "src", ROOT / "skins", ROOT / "docs"
@@ -328,6 +329,7 @@ def build() -> Path:
         assets = dict(common, **{
             "png:island": sheet_uri(fr, 48),
             "png:grass_strip": png_data_uri(tex_grass_strip(top_pal, sub_pal, petals)),
+            "png:sidebar": png_data_uri(sidebar_tile(w["biome"])),
             "svg:stars": svg_data_uri(stars_svg().replace('fill="white"', f'fill="{w["star"]}"')),
             "svg:clouds": svg_data_uri(clouds_svg().replace('fill="white"', f'fill="{w["cloud"]}"')),
         })

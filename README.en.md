@@ -74,6 +74,16 @@ hermes pets off          # turn the pet off
 
 Walking left/right uses 16 frames, the other states 6. Setting the pet size to about 0.6 in the desktop app shows the detail best.
 
+**Pet rotation**: press Ctrl+K (⌘K) and search "Minecraft 寵物" for three modes (default: fixed):
+
+| Command | Effect |
+|---|---|
+| Follow the world | One pet per world: Overworld and Desert = creeper; Cherry Grove = bee; Snowy Plains = chicken; Nether and Mushroom Fields = pig; The End = enderman; Lush Caves = slime; Deep Ocean and Deep Dark = lantern |
+| Random every 5–10 min | Random pet, never the same one twice in a row |
+| Fixed | Keeps the pet you picked |
+
+The pet is a Hermes setting, so every app connected to the same Hermes switches together; a pet you turned off is never turned back on.
+
 ## Activity icons
 
 ![activity](docs/activity.gif)

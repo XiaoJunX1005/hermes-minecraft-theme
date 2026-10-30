@@ -63,10 +63,14 @@ body,
   to   { background-position: 640px 18px, -760px 70px, 0 0; }
 }
 
-/* ---------- sidebar: deepslate ------------------------------------------- */
-[data-slot="sidebar"] {
-  background-image: url("{{png:noise}}");
-  background-size: 64px 64px;
+/* ---------- sidebar: the world's signature block (oak, nether brick, end stone...) ---------- */
+/* Hermes paints an opaque panel inside the sidebar (sidebar-inner), so both layers get the tile. */
+[data-slot="sidebar"],
+[data-slot="sidebar-inner"] {
+  background-color: #1b1d23 !important;
+  background-image: url("{{png:sidebar}}") !important;
+  background-size: 64px 64px !important;
+  background-repeat: repeat !important;
   image-rendering: pixelated;
 }
 [data-slot="sidebar"] [data-slot="row-button"],
