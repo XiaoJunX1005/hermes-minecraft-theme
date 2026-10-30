@@ -1,0 +1,6 @@
+{
+  "id": "creeper",
+  "displayName": "Creeper",
+  "description": "接近遊戲比例的苦力怕：立體方塊、四腳交替走路，失敗時會膨脹、閃光、冒煙。",
+  "spritesheetPath": "spritesheet.png"
+}

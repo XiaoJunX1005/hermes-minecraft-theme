@@ -1,0 +1,6 @@
+{
+  "id": "lantern",
+  "displayName": "Lantern",
+  "description": "原創的銅製小燈籠：發光的玻璃臉，提把會晃，失敗時火光熄滅再點亮。",
+  "spritesheetPath": "spritesheet.png"
+}

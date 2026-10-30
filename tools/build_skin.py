@@ -26,7 +26,7 @@ from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from pixels import DIRT, dirt_hd, grass_side_hd, grass_top_hd, noise_texture, value_noise  # noqa: E402,F401
-from make_creeper import head_pixels  # noqa: E402
+from make_pets import RETIRED, hero_pixels  # noqa: E402
 from voxel import render as render_island  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -208,7 +208,7 @@ def banner_logo() -> str:
 
 
 def banner_hero() -> str:
-    px = head_pixels()
+    px = hero_pixels("creeper")
     lines = []
     for y in range(3, 49, 2):
         segs, cur, run = [], None, 0
@@ -427,16 +427,19 @@ def install(skin: Path, skin_name: str | None = None, pet: str | None = None) ->
         dest = home / "desktop-plugins" / plug.parent.name
         dest.mkdir(parents=True, exist_ok=True)
         shutil.copy2(plug, dest / "plugin.js")
+    cur_skin, cur_pet = _cfg("display.skin"), _cfg("display.pet.slug")  # read before old pets disappear
     for d in sorted((ROOT / "pets").iterdir()):
         if d.is_dir():
             shutil.copytree(d, home / "pets" / d.name, dirs_exist_ok=True)
-    cur_skin, cur_pet = _cfg("display.skin"), _cfg("display.pet.slug")
     skin_name = skin_name or (cur_skin if cur_skin in WORLDS else "minecraft")
-    pet = pet or (cur_pet if (home / "pets" / cur_pet).is_dir() and cur_pet else "creeper-blocky")
+    want = RETIRED.get(cur_pet, cur_pet)
+    pet = pet or (want if want and (home / "pets" / want).is_dir() else "creeper")
     if skin_name != cur_skin:
         subprocess.run(["hermes", "config", "set", "display.skin", skin_name], check=False)
     if pet != cur_pet:
         subprocess.run(["hermes", "pets", "select", pet], check=False)
+    for old in RETIRED:  # pets from older versions of this project only, after the new one is selected
+        shutil.rmtree(home / "pets" / old, ignore_errors=True)
     print(f"skin={skin_name} pet={pet}")
     print(f"installed into {home}")
 

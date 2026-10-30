@@ -26,7 +26,7 @@ irm https://raw.githubusercontent.com/XiaoJunX1005/hermes-minecraft-theme/main/i
 curl -fsSL https://raw.githubusercontent.com/XiaoJunX1005/hermes-minecraft-theme/main/install.sh | bash
 ```
 
-第一次安裝會套用 `minecraft` 世界和 `creeper-blocky` 寵物；之後再執行就是更新，會保留你目前的選擇。
+第一次安裝會套用 `minecraft` 世界和 `creeper` 寵物；之後再執行就是更新，會保留你目前的選擇。
 
 ## 世界
 
@@ -56,26 +56,23 @@ hermes config set display.skin minecraft-nether
 ## 寵物
 
 ```bash
-hermes pets select mc-bee
+hermes pets select bee
 hermes pets off          # 關閉寵物
 ```
 
-![creepers](docs/creepers.gif)
-
-![mobs](docs/mobs.gif)
+![pets](docs/pets.gif)
 
 | 寵物名稱 | 說明 |
 |---|---|
-| `creeper-blocky` | 苦力怕：方正 Q 版（預設） |
-| `creeper-carved` | 苦力怕：稜角分明、臉部內凹 |
-| `creeper-tall` | 苦力怕：接近遊戲比例 |
-| `creeper-buddy` | 苦力怕：圓潤 Q 版，有腮紅 |
-| `mc-pig` | 豬 |
-| `mc-chicken` | 雞 |
-| `mc-slime` | 史萊姆 |
-| `mc-bee` | 蜜蜂 |
-| `mc-enderman` | 終界使者 |
-| `lantern-buddy` | 原創小燈籠 |
+| `creeper` | 苦力怕（預設）：四腳交替走路，失敗時膨脹、閃光、冒煙 |
+| `pig` | 豬：短腿小跑、揮蹄子，失敗時頭暈冒星星 |
+| `chicken` | 雞：走路時頭一伸一縮、拍翅膀，嚇到時羽毛亂飛 |
+| `slime` | 史萊姆：半透明、一彈一彈地跳，看得到裡面的臉 |
+| `bee` | 蜜蜂：半透明翅膀一直拍，揮手時跳搖擺舞，跳躍時翻滾 |
+| `enderman` | 終界使者：紫色眼睛，跳躍時傳送，等待時抱著草方塊 |
+| `lantern` | 原創小燈籠：發光的玻璃臉，提把會晃，失敗時熄滅再點亮 |
+
+左右走路各 16 格、其他動作各 6 格。建議在桌面版把寵物大小調到 0.6 左右，細節比較清楚。
 
 ## 活動圖示
 

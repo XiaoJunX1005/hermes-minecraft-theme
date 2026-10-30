@@ -1,0 +1,6 @@
+{
+  "id": "slime",
+  "displayName": "Slime",
+  "description": "半透明的史萊姆：一彈一彈地跳，裡面的臉看得到，失敗時攤平噴出黏液。",
+  "spritesheetPath": "spritesheet.png"
+}

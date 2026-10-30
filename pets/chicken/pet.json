@@ -1,0 +1,6 @@
+{
+  "id": "chicken",
+  "displayName": "Chicken",
+  "description": "白色的雞：走路時頭一伸一縮、會拍翅膀，嚇到時羽毛亂飛。",
+  "spritesheetPath": "spritesheet.png"
+}

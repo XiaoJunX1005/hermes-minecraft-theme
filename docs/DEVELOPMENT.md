@@ -6,13 +6,11 @@
 
 ```bash
 pip install pillow
-python tools/make_creeper.py      # 苦力怕 → pets/creeper-*/、docs/creepers.gif
-python tools/make_mobs.py         # 其他生物 → pets/mc-*/、docs/mobs.gif
-python tools/make_lantern.py      # 小燈籠 → pets/lantern-buddy/
+python tools/make_pets.py         # 7 隻寵物 → pets/*/、docs/pets.gif、docs/pets/*.gif（會檢查每格不貼邊）
 python tools/make_activity.py     # 活動圖示 → desktop-plugins/minecraft-activity/plugin.js、docs/activity.gif
 python tools/build_skin.py        # 10 個世界 → skins/*.yaml、docs/islands.gif、docs/thinking.gif
 python tools/build_skin.py --install                 # 產生並安裝到本機，保留目前的選擇
-python tools/build_skin.py --install --skin=minecraft-end --pet=mc-bee
+python tools/build_skin.py --install --skin=minecraft-end --pet=bee
 python tools/make_preview.py && python tools/record_gif.py   # 預覽頁與 docs/preview.gif（需要 Chrome 或 Edge）
 ```
 
@@ -24,6 +22,8 @@ python tools/make_preview.py && python tools/record_gif.py   # 預覽頁與 docs
 | `tools/make_icons.py` | 主題內建的思考中圖示（無插件時使用） |
 | `src/activity-plugin.js` | 活動圖示插件原始碼（`make_activity.py` 會把圖嵌入並輸出到 `desktop-plugins/`） |
 | `tools/pixels.py` | 草地、泥土等材質 |
+| `tools/pet3d.py` | 寵物用的立體方塊渲染器（96×104 像素，可半透明、自發光） |
+| `tools/make_pets.py` | 7 隻寵物的模型、動作與特效 |
 | `tools/critters_art.py` | 飛行生物與界伏蚌的像素圖 |
 | `tools/scene_art.py` | 背景地標（各種樹、巨型蕈、冰屋、終界城、水晶、傳送門） |
 

@@ -1,12 +1,13 @@
 # Hermes x Minecraft theme: install / update (Windows PowerShell)
 #   irm https://raw.githubusercontent.com/XiaoJunX1005/hermes-minecraft-theme/main/install.ps1 | iex
-# Optional: $env:HMT_SKIN = 'minecraft-end'; $env:HMT_PET = 'mc-bee'  (otherwise your current choice is kept)
+# Optional: $env:HMT_SKIN = 'minecraft-end'; $env:HMT_PET = 'bee'  (otherwise your current choice is kept)
 & {
 $ErrorActionPreference = 'Stop'
 $repo = if ($env:HMT_REPO) { $env:HMT_REPO } else { 'https://raw.githubusercontent.com/XiaoJunX1005/hermes-minecraft-theme/main' }
 $skins = 'minecraft','minecraft-nether','minecraft-end','minecraft-snow','minecraft-cherry','minecraft-ocean','minecraft-lush','minecraft-desert','minecraft-mushroom','minecraft-deepdark'
 $plugins = 'minecraft-activity'
-$pets = 'creeper-blocky','creeper-carved','creeper-tall','creeper-buddy','lantern-buddy','mc-pig','mc-chicken','mc-slime','mc-bee','mc-enderman'
+$pets = 'creeper','pig','chicken','slime','bee','enderman','lantern'
+$retired = @{ 'creeper-blocky'='creeper'; 'creeper-carved'='creeper'; 'creeper-tall'='creeper'; 'creeper-buddy'='creeper'; 'lantern-buddy'='lantern'; 'mc-pig'='pig'; 'mc-chicken'='chicken'; 'mc-slime'='slime'; 'mc-bee'='bee'; 'mc-enderman'='enderman' }
 $hhome = if ($env:HERMES_HOME) { $env:HERMES_HOME }
          elseif (Test-Path "$env:LOCALAPPDATA\hermes") { "$env:LOCALAPPDATA\hermes" }
          else { Join-Path $HOME '.hermes' }
@@ -43,6 +44,7 @@ Write-Host "Installed into $hhome"
 $ErrorActionPreference = 'Continue'
 if (-not (Get-Command hermes -ErrorAction SilentlyContinue)) {
     Write-Host 'hermes command not found. Apply it with: hermes config set display.skin minecraft'
+    foreach ($old in $retired.Keys) { Remove-Item "$hhome\pets\$old" -Recurse -Force -ErrorAction SilentlyContinue }
     return
 }
 function Get-HermesCfg($key) {
@@ -52,10 +54,13 @@ function Get-HermesCfg($key) {
 }
 $curSkin = Get-HermesCfg 'display.skin'
 $curPet = Get-HermesCfg 'display.pet.slug'
+$wantPet = if ($retired.ContainsKey($curPet)) { $retired[$curPet] } else { $curPet }
 $skin = if ($env:HMT_SKIN) { $env:HMT_SKIN } elseif ($skins -contains $curSkin) { $curSkin } else { 'minecraft' }
-$pet = if ($env:HMT_PET) { $env:HMT_PET } elseif ($curPet -and (Test-Path "$hhome\pets\$curPet")) { $curPet } else { 'creeper-blocky' }
+$pet = if ($env:HMT_PET) { $env:HMT_PET } elseif ($wantPet -and (Test-Path "$hhome\pets\$wantPet")) { $wantPet } else { 'creeper' }
 if ($skin -ne $curSkin) { & hermes config set display.skin $skin }
 if ($pet -ne $curPet) { & hermes pets select $pet }
+# Pets from older versions (one per species now); only this project's own old folders, after selecting the new one.
+foreach ($old in $retired.Keys) { Remove-Item "$hhome\pets\$old" -Recurse -Force -ErrorAction SilentlyContinue }
 Write-Host "Theme: $skin   Pet: $pet"
 Write-Host 'Revert: hermes config set display.skin default ; hermes pets off'
 }

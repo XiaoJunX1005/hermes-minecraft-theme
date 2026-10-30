@@ -26,7 +26,7 @@ irm https://raw.githubusercontent.com/XiaoJunX1005/hermes-minecraft-theme/main/i
 curl -fsSL https://raw.githubusercontent.com/XiaoJunX1005/hermes-minecraft-theme/main/install.sh | bash
 ```
 
-The first install applies the `minecraft` world and the `creeper-blocky` pet. Running it again updates everything and keeps your current choices.
+The first install applies the `minecraft` world and the `creeper` pet. Running it again updates everything and keeps your current choices.
 
 ## Worlds
 
@@ -56,26 +56,23 @@ Each world also has its own animated background (one of three layouts, picked at
 ## Pets
 
 ```bash
-hermes pets select mc-bee
+hermes pets select bee
 hermes pets off          # turn the pet off
 ```
 
-![creepers](docs/creepers.gif)
-
-![mobs](docs/mobs.gif)
+![pets](docs/pets.gif)
 
 | Pet | Description |
 |---|---|
-| `creeper-blocky` | Creeper: boxy chibi (default) |
-| `creeper-carved` | Creeper: sharp edges, recessed face |
-| `creeper-tall` | Creeper: close to in-game proportions |
-| `creeper-buddy` | Creeper: round chibi with blush |
-| `mc-pig` | Pig |
-| `mc-chicken` | Chicken |
-| `mc-slime` | Slime |
-| `mc-bee` | Bee |
-| `mc-enderman` | Enderman |
-| `lantern-buddy` | An original little lantern |
+| `creeper` | Creeper (default): alternating four-leg walk; swells, flashes and smokes when something fails |
+| `pig` | Pig: short-legged trot, waves a hoof, sees stars when something fails |
+| `chicken` | Chicken: head bobs as it walks, flaps its wings, feathers fly when startled |
+| `slime` | Slime: translucent, bounces along, face visible inside |
+| `bee` | Bee: translucent wings always beating, waggle dance when waving, barrel roll when jumping |
+| `enderman` | Enderman: purple eyes, teleports when jumping, holds a grass block while waiting |
+| `lantern` | An original little lantern: glowing glass face, swinging handle, goes out and relights when something fails |
+
+Walking left/right uses 16 frames, the other states 6. Setting the pet size to about 0.6 in the desktop app shows the detail best.
 
 ## Activity icons
 
