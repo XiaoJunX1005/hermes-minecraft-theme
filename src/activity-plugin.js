@@ -22,6 +22,9 @@ const LABEL = Object.fromEntries(KINDS.map(k => [k.kind, k.label]))
 const STALE_MS = 10 * 60 * 1000
 const CRITTERS = '__CRITTERS__'
 const CRITTER_ROWS = __CRITTER_ROWS__
+// Each 16x16 cell sits in an 18x18 slot (1-px transparent gutter) so GPU sampling can't pick up the row below.
+const CS = __CRITTER_STRIDE__
+const cell = (col, row) => [col * CS + 1, row * CS + 1]
 const WORLD_CSS = __WORLD_CSS__
 const WORLD_INFO = __WORLD_INFO__
 
@@ -824,7 +827,7 @@ export class Critters {
         if (c.x < -500) continue
         const row = CRITTER_ROWS.indexOf('shulker:front')
         ctx.globalAlpha = c.alpha
-        ctx.drawImage(this.atlas, Math.round(c.open * 7) * 16, row * 16, 16, 16, Math.round(c.x - S.size / 2), Math.round(c.y - (S.size * 15) / 16), S.size, S.size)
+        ctx.drawImage(this.atlas, ...cell(Math.round(c.open * 7), row), 16, 16, Math.round(c.x - S.size / 2), Math.round(c.y - (S.size * 15) / 16), S.size, S.size)
         ctx.globalAlpha = 1
         if (c.state !== 'sit') {
           ctx.fillStyle = 'rgba(200,130,255,0.85)'
@@ -868,7 +871,7 @@ export class Critters {
       ctx.save()
       ctx.translate(Math.round(c.x + (c.jx || 0)), Math.round(c.y + bob))
       if (view === 'side') ctx.scale(face * sx, 1)
-      ctx.drawImage(this.atlas, f * 16, row * 16, 16, 16, -S.size / 2, -S.size / 2, S.size, S.size)
+      ctx.drawImage(this.atlas, ...cell(f, row), 16, 16, -S.size / 2, -S.size / 2, S.size, S.size)
       ctx.restore()
     }
     this.fx = this.fx.filter(p => (p.life -= dt) > 0)
@@ -1712,9 +1715,21 @@ export class Rotator {
 // ---- pet modes: follow the world / random every few minutes / manual (default) ------------
 // The pet choice is a Hermes setting (display.pet.slug), so a switch here changes it for every
 // app connected to this Hermes. The mode itself is stored per app; it starts as manual.
-export const WORLD_PET = { overworld: 'creeper', cherry: 'bee', snow: 'chicken', nether: 'pig', end: 'enderman',
-  ocean: 'lantern', lush: 'slime', desert: 'creeper', mushroom: 'pig', deepdark: 'lantern' }
-export const PETS = ['creeper', 'pig', 'chicken', 'slime', 'bee', 'enderman', 'lantern']
+// World mode draws a pet from the world's own creatures each time you enter the world.
+export const WORLD_PETS = {
+  overworld: ['creeper', 'pig', 'chicken', 'bee', 'rabbit', 'slime'],
+  cherry: ['bee', 'pig', 'rabbit'],
+  snow: ['polar-bear', 'rabbit'],
+  nether: ['blaze', 'magma-cube'],
+  end: ['enderman', 'shulker'],
+  ocean: ['squid'],
+  lush: ['axolotl', 'glow-squid'],
+  desert: ['rabbit'],
+  mushroom: ['mooshroom'],
+  deepdark: ['warden']
+}
+export const PETS = ['creeper', 'pig', 'chicken', 'slime', 'bee', 'enderman', 'lantern', 'shulker', 'blaze', 'magma-cube',
+  'mooshroom', 'polar-bear', 'rabbit', 'axolotl', 'squid', 'glow-squid', 'warden']
 const PET_MODES = ['manual', 'world', 'random']
 
 export class PetCycler {
@@ -1728,50 +1743,85 @@ export class PetCycler {
     this.min = 5 * 60 * 1000
     this.max = 10 * 60 * 1000
     this.due = 0
-    this.bag = []
+    this.gen = 0
     this.busy = false
+    this.pending = null
+    this.installed = null
+    this.installedAt = 0
+    this.world = ''        // world we were last asked to follow
+    this.applied = ''      // world whose pet was actually set
+    this.retryAt = 0
     this.last = ''
+    this.dead = false
   }
 
   active() {
-    return typeof document === 'undefined' || document.documentElement.dataset.mcTheme === '1'
+    return !this.dead && (typeof document === 'undefined' || document.documentElement.dataset.mcTheme === '1')
   }
 
-  /** Switch to `slug` unless the pet is turned off (never re-enable it) or already showing. */
-  async select(slug) {
-    if (!slug || this.busy || !this.active()) return false
+  live(gen, mode) {
+    return gen === this.gen && this.mode === mode && this.active()
+  }
+
+  /** Slugs installed in this Hermes (cached 10 min) - only those are ever passed to pet.select,
+   *  so it never goes looking for a same-named pet online. */
+  async installedSet() {
+    if (this.installed && this.now() - this.installedAt < 10 * 60 * 1000) return this.installed
+    const g = await this.request('pet.gallery', {}, 20000)
+    this.installed = new Set((g?.pets || []).filter(p => p.installed).map(p => p.slug))
+    this.installedAt = this.now()
+    return this.installed
+  }
+
+  /** Pick a different installed pet from `pool` and select it. Gives up when the pet is off, nothing
+   *  in the pool is installed, the theme is gone, or a newer request (mode / world change) came in. */
+  async switchFrom(pool, gen, mode = this.mode, onOk = null) {
+    if (!pool?.length || !this.live(gen, mode)) return false
+    if (this.busy) {
+      this.pending = { pool, gen, mode, onOk }
+      return false
+    }
     this.busy = true
     try {
       const meta = await this.request('pet.info.meta', {})
-      if (!meta || meta.enabled === false) return false
-      if (meta.slug === slug) {
-        this.last = slug
+      if (!this.live(gen, mode) || !meta || meta.enabled === false) return false
+      const inst = await this.installedSet()
+      if (!this.live(gen, mode)) return false
+      const cands = pool.filter(p => inst.has(p))
+      if (!cands.length) return false
+      const others = cands.filter(p => p !== meta.slug)
+      if (!others.length) {
+        this.last = meta.slug
+        onOk?.()
         return true
       }
-      await this.request('pet.select', { slug })
-      this.last = slug
+      const pick = others[Math.floor(this.rand() * others.length)]
+      if (!this.live(gen, mode)) return false
+      await this.request('pet.select', { slug: pick })
+      this.last = pick
+      if (gen === this.gen) onOk?.()
       return true
     } catch {
+      this.installed = null
       return false
     } finally {
       this.busy = false
+      const nx = this.pending
+      this.pending = null
+      if (nx && this.live(nx.gen, nx.mode)) this.switchFrom(nx.pool, nx.gen, nx.mode, nx.onOk)
     }
+  }
+
+  async followWorld(world) {
+    const gen = ++this.gen
+    this.retryAt = this.now() + 60 * 1000   // if this (or its queued run) fails, try again in a minute
+    return this.switchFrom(WORLD_PETS[world], gen, 'world', () => { this.applied = world })
   }
 
   onWorld(world) {
-    if (this.mode === 'world' && WORLD_PET[world]) return this.select(WORLD_PET[world])
-    return Promise.resolve(false)
-  }
-
-  pickRandom() {
-    if (!this.bag.length) {
-      this.bag = PETS.filter(p => p !== this.last)
-      for (let i = this.bag.length - 1; i > 0; i--) {
-        const j = Math.floor(this.rand() * (i + 1))
-        ;[this.bag[i], this.bag[j]] = [this.bag[j], this.bag[i]]
-      }
-    }
-    return this.bag.pop()
+    if (this.mode !== 'world' || !world || world === this.world) return Promise.resolve(false)
+    this.world = world
+    return this.followWorld(world)
   }
 
   schedule() {
@@ -1780,21 +1830,43 @@ export class PetCycler {
 
   next() {
     this.schedule()
-    return this.select(this.pickRandom())
+    return this.switchFrom(PETS, ++this.gen, 'random')
+  }
+
+  /** Ctrl+K "switch now": from this world's creatures in world mode, from all pets otherwise. */
+  pickNow(world) {
+    if (this.mode === 'world') return this.switchFrom(WORLD_PETS[world] || PETS, ++this.gen, 'world', () => { this.applied = world })
+    if (this.mode === 'random') return this.next()
+    return this.switchFrom(PETS, ++this.gen, 'manual')
   }
 
   tick() {
-    if (this.mode !== 'random' || (typeof document !== 'undefined' && document.hidden)) return
-    if (this.now() >= this.due) this.next()
+    if (!this.active() || (typeof document !== 'undefined' && document.hidden)) return
+    if (this.mode === 'random') {
+      if (!this.due) this.schedule()
+      else if (this.now() >= this.due) this.next()
+    } else if (this.mode === 'world' && this.world && this.applied !== this.world && !this.busy && this.now() >= this.retryAt) {
+      this.retryAt = this.now() + 60 * 1000
+      this.followWorld(this.world)
+    }
   }
 
   setMode(mode, world) {
     this.mode = PET_MODES.includes(mode) ? mode : 'manual'
     this.storage?.set?.('petMode', this.mode)
-    this.bag = []
+    this.gen++
+    this.pending = null
+    this.world = ''
+    this.applied = ''
     if (this.mode === 'world') return this.onWorld(world)
     if (this.mode === 'random') return this.next()
     return Promise.resolve(false)
+  }
+
+  destroy() {
+    this.dead = true
+    this.gen++
+    this.pending = null
   }
 }
 
@@ -1864,7 +1936,7 @@ export default {
     critters.perches = () => scene.perches()
     critters.pools = () => scene.pools()
     const wipe = new Wipe()
-    const pets = new PetCycler(ctx.storage, (method, params) => host.request(method, params))
+    const pets = new PetCycler(ctx.storage, (method, params, timeoutMs) => host.request(method, params, timeoutMs))
     const rot = new Rotator(ctx.storage, wipe, () => {
       critters.place()
       scene.place()
@@ -1933,9 +2005,9 @@ export default {
       area: PALETTE_AREA,
       data: {
         id: `${ID}.pet-next`,
-        label: 'Minecraft：現在隨機換一隻寵物',
+        label: 'Minecraft：現在換一隻寵物（跟著世界時從這個世界的生物裡抽）',
         keywords: ['minecraft', 'pet', '寵物', 'next', '換'],
-        run: () => (pets.mode === 'random' ? pets.next() : pets.select(pets.pickRandom()))
+        run: () => pets.pickNow(rot.world)
       }
     })
     const subscribe = ctx.onEvent || host.onEvent
@@ -1943,6 +2015,7 @@ export default {
     ctx.register({ id: 'chip', area: STATUSBAR_AREAS.right, order: 50, render: () => jsx(ActivityChip, {}) })
     ctx.onDispose?.(() => {
       clearInterval(tick)
+      pets.destroy()
       window.removeEventListener('resize', placeOnResize)
       critters.destroy()
       scene.destroy()

@@ -71,6 +71,16 @@ hermes pets off          # turn the pet off
 | `bee` | Bee: translucent wings always beating, waggle dance when waving, barrel roll when jumping |
 | `enderman` | Enderman: purple eyes, teleports when jumping, holds a grass block while waiting |
 | `lantern` | An original little lantern: glowing glass face, swinging handle, goes out and relights when something fails |
+| `shulker` | Shulker: the shell opens and its head peeks out; hops along closed, slams shut with purple particles when something fails |
+| `blaze` | Blaze: rods spin around its head, sparks rise; rods droop and it smokes when something fails |
+| `magma-cube` | Magma Cube: splits into layers when it jumps, showing the glowing core |
+| `mooshroom` | Mooshroom: red-and-white, with red mushrooms on its back and head |
+| `polar-bear` | Polar Bear: white and heavy, a slow swaying walk |
+| `rabbit` | Rabbit: hops along, ears bobbing |
+| `axolotl` | Axolotl: pink, three gills on each side of the head, tail sways |
+| `squid` | Squid: dark blue, tentacles pulse as it swims, squirts ink when something fails |
+| `glow-squid` | Glow Squid: glowing spots, tentacles pulse as it swims, squirts ink when something fails |
+| `warden` | Warden: the souls in its chest glow; it roars when jumping |
 
 Walking left/right uses 16 frames, the other states 6. Setting the pet size to about 0.6 in the desktop app shows the detail best.
 
@@ -78,11 +88,11 @@ Walking left/right uses 16 frames, the other states 6. Setting the pet size to a
 
 | Command | Effect |
 |---|---|
-| Follow the world | One pet per world: Overworld and Desert = creeper; Cherry Grove = bee; Snowy Plains = chicken; Nether and Mushroom Fields = pig; The End = enderman; Lush Caves = slime; Deep Ocean and Deep Dark = lantern |
-| Random every 5–10 min | Random pet, never the same one twice in a row |
+| Follow the world | Each time you enter a world, draws one of that world's creatures (not the same one twice in a row when there is a choice): Overworld = creeper, pig, chicken, bee, rabbit, slime; Cherry Grove = bee, pig, rabbit; Snowy Plains = polar bear, rabbit; Nether = blaze, magma cube; The End = enderman, shulker; Deep Ocean = squid; Lush Caves = axolotl, glow squid; Desert = rabbit; Mushroom Fields = mooshroom; Deep Dark = warden |
+| Random every 5–10 min | Random pet from all 17, never the same one twice in a row |
 | Fixed | Keeps the pet you picked |
 
-The pet is a Hermes setting, so every app connected to the same Hermes switches together; a pet you turned off is never turned back on.
+The pet is a Hermes setting, so every app connected to the same Hermes switches together; while the pet is turned off, the automatic modes skip switching. Only installed pets are ever picked.
 
 ## Activity icons
 

@@ -6,7 +6,7 @@ set -euo pipefail
 REPO="${HMT_REPO:-https://raw.githubusercontent.com/XiaoJunX1005/hermes-minecraft-theme/main}"
 SKINS="minecraft minecraft-nether minecraft-end minecraft-snow minecraft-cherry minecraft-ocean minecraft-lush minecraft-desert minecraft-mushroom minecraft-deepdark"
 PLUGINS="minecraft-activity"
-PETS="creeper pig chicken slime bee enderman lantern"
+PETS="creeper pig chicken slime bee enderman lantern shulker blaze magma-cube mooshroom polar-bear rabbit axolotl squid glow-squid warden"
 RETIRED="creeper-blocky creeper-carved creeper-tall creeper-buddy lantern-buddy mc-pig mc-chicken mc-slime mc-bee mc-enderman"
 
 if [ -n "${HERMES_HOME:-}" ]; then HOME_DIR="$HERMES_HOME"

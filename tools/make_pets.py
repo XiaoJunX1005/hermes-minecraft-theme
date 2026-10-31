@@ -898,6 +898,670 @@ def lantern_frame(state: str, f: int) -> Image.Image:
     return P.render(parts, under, over, outline=(54, 30, 18))
 
 
+# ================================================================== world pets (v3) ======
+def face_tex(eyes: str, look: float, rects: list[tuple[int, int, int, int]], dark: Any, white: Any = None,
+             extra: Any = None, side_shade: bool = True) -> P.Tex:
+    """Front-face eyes (open / blink / happy / x / down) in the given texel rects, then `extra`, then skin."""
+    def tex(face, u, v, W, H):
+        if face == "front":
+            sh = round(look)
+            for ex, ey, ew, eh in rects:
+                ex += sh
+                if ex <= u < ex + ew and ey <= v < ey + eh:
+                    x, y = u - ex, v - ey
+                    if eyes == "blink":
+                        if y == eh - 1:
+                            return dark
+                        break
+                    if eyes == "happy":
+                        if y == max(0, eh - 1 - min(x, ew - 1 - x)):
+                            return dark
+                        break
+                    if eyes == "x":
+                        fx, fy = x / max(1, ew - 1), y / max(1, eh - 1)
+                        if abs(fx - fy) < 0.34 or abs(fx - (1 - fy)) < 0.34:
+                            return dark
+                        break
+                    if eyes == "down":
+                        if y >= eh // 2:
+                            return dark
+                        break
+                    if white is not None and ew > 1 and (x, y) == (min(1, ew - 1), 0):
+                        return white
+                    return dark
+        if extra is not None:
+            r = extra(face, u, v, W, H)
+            if r is not None:
+                return r
+        if side_shade and face in P.SIDES and v >= H - 2:
+            return -0.08
+        return None
+    return tex
+
+
+def bubble_dot(fx: P.FX, x: float, y: float, a: int = 200) -> None:
+    for dx, dy in ((0, -1), (1, 0), (0, 1), (-1, 0)):
+        fx.put(x + dx, y + dy, (200, 240, 255, a))
+    fx.put(x, y, (240, 255, 255, a // 3))
+
+
+# ---- generic four-legged body (mooshroom, polar bear, rabbit, axolotl) -------------------
+def quad_parts(Q: dict[str, Any], yaw=FRONT_YAW, lift=0.0, dx=0.0, sc=(1.0, 1.0, 1.0), roll=0.0, pitch=0.0, hy=0.0, hp=0.0,
+               hr=0.0, legs=(0.0, 0.0, 0.0, 0.0), eyes="open", look=0.0, tail=0.0) -> list[P.Part]:
+    zo, LH = Q["zoff"], Q["leg_h"]
+    root = P.Rig(P.chain(P.rot_y(yaw), P.scale(*sc)), (dx, lift, 0.0))
+    hips = root.child((0, LH, zo), P.chain(P.rot_z(roll), P.rot_x(pitch)))
+    bx, by, bz = Q["body"]
+    parts = [hips.box("body", (0, by, 0), (bx, by, bz), Q.get("body_tex", _shade_ends), Q["pal"], 1)]
+    ny, nz = Q["neck"]
+    neck = hips.child((0, ny, nz), P.chain(P.rot_y(hy), P.rot_x(hp), P.rot_z(hr)))
+    hc, hh = Q["head"]
+    parts.append(neck.box("head", hc, hh, Q["head_tex"](eyes, look), Q["pal"], 0))
+    for k, (name, c, h, tex, pal) in enumerate(Q.get("head_extra", [])):
+        parts.append(neck.box(name, c, h, tex, pal, 20 + k))
+    for k, (name, c, h, tex, pal) in enumerate(Q.get("body_extra", [])):
+        parts.append(hips.box(name, c, h, tex, pal, 30 + k))
+    if "tail" in Q:
+        piv, c, h, pal = Q["tail"]
+        tl = hips.child(piv, P.rot_y(tail) if Q.get("tail_yaw") else P.rot_x(tail))
+        parts.append(tl.box("tail", c, h, None, pal, 3))
+    lx, lz = Q["leg"]
+    for k, (x, z) in enumerate(Q["legs_at"]):
+        leg = root.child((x, LH, z + zo), P.rot_x(legs[k]))
+        parts.append(leg.box(f"leg{k}", (0, -LH / 2, 0), (lx, LH / 2, lz), Q.get("leg_tex", _shade_ends), Q.get("leg_pal", Q["pal"]), 4 + k))
+    return parts
+
+
+def quad_frame(Q: dict[str, Any], state: str, f: int) -> Image.Image:
+    P.set_ground(Q.get("ground", 93.0))   # frames_for() resets it after every frame
+    under, over = P.FX(), P.FX()
+    p = phase(state, f)
+    LH, sw = Q["leg_h"], Q.get("swing", 0.44)
+    kw: KW = {}
+    if state == "idle":
+        kw = dict(sc=(1, 1 + 0.018 * math.sin(p), 1), hp=0.05 * math.sin(p), look=0.6 * math.sin(p), tail=0.4 * math.sin(2 * p))
+    elif state in WALK:
+        a = sw * math.sin(p)
+        kw = dict(yaw=Q.get("side_yaw", SIDE_YAW) * facing(state), lift=-LH * (1 - math.cos(a)), legs=(-a, a, a, -a),
+                  roll=0.02 * math.sin(2 * p), hp=0.06 * math.sin(2 * p), tail=0.5 * math.sin(2 * p), look=0.8)
+        walk_dust(under, f, facing(state), Q["rear"], Q.get("dust", (4, 12)))
+    elif state == "waving":
+        w = math.sin(p)
+        kw = dict(legs=(-1.0 - 0.3 * w, 0.0, 0.0, 0.0), roll=0.05, hr=0.1 * w, eyes="happy", tail=0.6 * w)
+    elif state == "jumping":
+        J = Q.get("jump", 1.0)
+        sy = [0.86, 1.1, 1.04, 1.0, 1.03, 0.9][f]
+        t = [-0.1, 0.25, 0.45, 0.55, 0.3, -0.08][f]
+        sx = 1 + (1 - sy) * 0.5
+        kw = dict(lift=[0.0, 2.4, 5.6, 6.8, 3.8, 0.0][f] * J, sc=(sx, sy, sx), legs=(-t, -t, t, t),
+                  eyes="happy" if f in (2, 3) else "open", hp=[0.08, -0.1, -0.12, -0.05, 0.05, 0.08][f])
+    elif state == "failed":
+        kw = dict(roll=[0.12, -0.12, 0.08, -0.06, 0.03, 0][f], hr=[-0.15, 0.15, -0.1, 0.08, -0.04, 0][f], eyes="x",
+                  sc=(1, [0.94, 0.97, 1, 1, 1, 1][f], 1), legs=(0.12, -0.12, -0.1, 0.1))
+    elif state == "waiting":
+        kw = dict(hy=0.35 * math.sin(p), look=math.sin(p), tail=0.4 * math.sin(2 * p))
+    elif state == "running":
+        a = (sw + 0.1) * math.sin(p)
+        kw = dict(legs=(-a, a, a, -a), lift=-LH * (1 - math.cos(a)), roll=0.03 * math.sin(p), hr=-0.05, tail=0.6 * math.sin(2 * p))
+    elif state == "review":
+        kw = dict(hy=-0.32, hp=0.32 + 0.06 * math.sin(p), look=-0.5, eyes="down")
+    if Q.get("pose"):
+        Q["pose"](state, f, kw)
+    parts = quad_parts(Q, **kw)
+    P.shadow(under, (kw.get("dx", 0.0), 0, 0), P.footprint(*Q["foot"], kw.get("yaw", FRONT_YAW)), kw.get("lift", 0.0))
+    common(state, f, parts, over)
+    if state == "failed":
+        stars_ring(over, parts, f)
+    return P.render(parts, under, over, outline=Q["outline"])
+
+
+# ---- mooshroom ---------------------------------------------------------------------------
+COW_RED = [(110, 20, 20), (138, 28, 26), (164, 36, 32), (188, 48, 40), (206, 62, 50), (220, 80, 64), (232, 104, 88), (244, 132, 116)]
+COW_WHITE = (236, 230, 224)
+MUSH_CAP = [(140, 20, 20), (170, 28, 26), (196, 40, 34), (220, 56, 44), (236, 76, 60)]
+STEM = [(196, 186, 170), (214, 204, 190), (228, 220, 208), (240, 234, 224)]
+
+
+def cow_body_tex(face, u, v, W, H):
+    if P.mottle(u, v, 13) > 0.62:
+        return COW_WHITE
+    return _shade_ends(face, u, v, W, H)
+
+
+def cap_tex(face, u, v, W, H):
+    if face == "top" and P.hash2(u, v, 17) < 0.22:
+        return (246, 240, 232)
+    return None
+
+
+def muzzle_tex(face, u, v, W, H):
+    if face == "front" and v in (2, 3) and (u in (2, 3) or u in (W - 4, W - 3)):
+        return (110, 70, 66)
+    return (236, 206, 196)
+
+
+def hoof_tex(color: tuple[int, int, int]):
+    def tex(face, u, v, W, H):
+        if (face in P.SIDES and v >= H - 3) or face == "bottom":
+            return color
+        return -0.05
+    return tex
+
+
+MOOSH: dict[str, Any] = dict(
+    pal=COW_RED, leg_h=6.0, leg=(1.67, 1.67), legs_at=[(-2.67, 5.33), (2.67, 5.33), (-2.67, -5.67), (2.67, -5.67)], zoff=-3.0,
+    body=(4.67, 4.0, 7.67), body_tex=cow_body_tex, neck=(5.33, 7.67), head=((0, 0.67, 2.33), (4.0, 4.0, 3.0)),
+    head_tex=lambda e, l: face_tex(e, l, [(2, 7, 4, 3), (18, 7, 4, 3)], (24, 14, 14), (230, 230, 230)),
+    head_extra=[("muzzle", (0, -1.67, 6.0), (2.67, 1.67, 0.67), muzzle_tex, COW_RED),
+                ("horn0", (-3.0, 5.0, 2.0), (0.5, 0.67, 0.5), lambda *a: (214, 204, 180), STEM),
+                ("horn1", (3.0, 5.0, 2.0), (0.5, 0.67, 0.5), lambda *a: (214, 204, 180), STEM),
+                ("hstem", (0.67, 5.33, 1.33), (0.4, 0.67, 0.4), None, STEM),
+                ("hcap", (0.67, 6.33, 1.33), (1.67, 0.67, 1.67), cap_tex, MUSH_CAP)],
+    body_extra=[("stem0", (-1.33, 8.67, 2.33), (0.4, 0.67, 0.4), None, STEM), ("cap0", (-1.33, 9.67, 2.33), (1.67, 0.67, 1.67), cap_tex, MUSH_CAP),
+                ("stem1", (1.67, 8.67, -3.0), (0.4, 0.67, 0.4), None, STEM), ("cap1", (1.67, 9.67, -3.0), (1.67, 0.67, 1.67), cap_tex, MUSH_CAP)],
+    tail=((0, 6.67, -7.67), (0, -1.33, -0.33), (0.4, 1.67, 0.4), COW_RED),
+    leg_tex=hoof_tex((70, 46, 40)), rear=10.5, foot=(5.0, 10.5), outline=(64, 14, 14), swing=0.4)
+
+# ---- polar bear --------------------------------------------------------------------------
+BEAR = [(156, 152, 140), (180, 176, 164), (200, 196, 186), (216, 212, 202), (230, 226, 218), (240, 238, 230), (248, 246, 240), (255, 253, 248)]
+
+
+def bear_snout_tex(face, u, v, W, H):
+    if face == "front" and v <= 2 and W // 2 - 2 <= u <= W // 2 + 1:
+        return (30, 28, 30)
+    return None
+
+
+BEAR_Q: dict[str, Any] = dict(
+    pal=BEAR, leg_h=5.33, leg=(2.0, 2.0), legs_at=[(-2.67, 5.0), (2.67, 5.0), (-2.67, -5.33), (2.67, -5.33)], zoff=-3.0,
+    body=(4.67, 4.33, 7.0), neck=(5.0, 7.0), head=((0, 0.33, 2.33), (3.67, 3.33, 3.0)),
+    head_tex=lambda e, l: face_tex(e, l, [(4, 6, 3, 3), (15, 6, 3, 3)], (22, 20, 22), (200, 200, 200)),
+    head_extra=[("snout", (0, -1.33, 6.0), (2.0, 1.33, 0.67), bear_snout_tex, BEAR),
+                ("ear0", (-2.67, 4.33, 1.33), (0.67, 0.67, 0.33), None, BEAR), ("ear1", (2.67, 4.33, 1.33), (0.67, 0.67, 0.33), None, BEAR)],
+    tail=((0, 6.67, -7.0), (0, -0.33, -0.33), (0.67, 0.67, 0.4), BEAR),
+    leg_tex=hoof_tex((92, 88, 82)), rear=10, foot=(5.2, 10.0), outline=(96, 96, 92), swing=0.36)
+
+# ---- rabbit (hops) -----------------------------------------------------------------------
+RAB = [(110, 78, 48), (132, 96, 60), (152, 112, 72), (170, 128, 84), (186, 144, 98), (200, 160, 114), (214, 178, 132), (228, 198, 156)]
+RAB_TAIL = [(200, 196, 188), (220, 216, 208), (236, 232, 224), (248, 246, 240)]
+
+
+def rabbit_ear_tex(face, u, v, W, H):
+    if face == "front" and 0 < u < W - 1 and 1 <= v < H - 1:
+        return (222, 150, 158)
+    return None
+
+
+def rabbit_nose(face, u, v, W, H):
+    if face == "front" and v in (12, 13) and u in (10, 11):
+        return (214, 120, 132)
+    return None
+
+
+def rabbit_pose(state: str, f: int, kw: KW) -> None:
+    if state in WALK:
+        t = WALK_LIFT[f] / 4.4
+        sy = WALK_SY[f]
+        sx = 1 + (1 - sy) * 0.5
+        kw.update(lift=WALK_LIFT[f] * 0.9, sc=(sx, sy, sx), legs=(-0.6 * t, -0.6 * t, 0.8 * t, 0.8 * t), hp=-0.08 * t, tail=0.3 * t)
+    elif state == "running":
+        h = abs(math.sin(phase(state, f)))
+        kw.update(lift=2.2 * h, legs=(-0.5 * h, -0.5 * h, 0.7 * h, 0.7 * h), sc=(1, 1.06 if h > 0.5 else 0.9, 1))
+    elif state == "idle":
+        kw["hr"] = 0.06 * math.sin(phase(state, f))
+
+
+RAB_Q: dict[str, Any] = dict(
+    pal=RAB, leg_h=3.5, leg=(1.33, 1.67), legs_at=[(-2.33, 4.0), (2.33, 4.0), (-2.67, -4.5), (2.67, -4.5)], zoff=-2.0,
+    body=(4.0, 3.5, 5.67), neck=(4.0, 5.67), head=((0, 1.67, 2.33), (3.67, 3.0, 3.0)),
+    head_tex=lambda e, l: face_tex(e, l, [(3, 7, 3, 3), (16, 7, 3, 3)], (30, 18, 14), (220, 220, 220), rabbit_nose),
+    head_extra=[("ear0", (-1.67, 7.67, 0.67), (0.83, 3.0, 0.5), rabbit_ear_tex, RAB),
+                ("ear1", (1.67, 7.67, 0.67), (0.83, 3.0, 0.5), rabbit_ear_tex, RAB)],
+    tail=((0, 5.0, -5.67), (0, 0, -0.83), (1.33, 1.33, 1.33), RAB_TAIL),
+    rear=7, foot=(4.2, 7.0), outline=(70, 46, 28), pose=rabbit_pose, dust=(12,))
+
+# ---- axolotl -----------------------------------------------------------------------------
+AXO = [(150, 72, 96), (178, 92, 118), (204, 114, 140), (224, 136, 160), (238, 156, 178), (246, 176, 194), (252, 196, 210), (255, 214, 224)]
+GILL = [(150, 40, 76), (176, 52, 92), (200, 66, 108), (220, 84, 124), (234, 104, 140)]
+
+
+def axo_smile(face, u, v, W, H):
+    if face == "front" and v == 13 and 9 <= u <= W - 10:
+        return (150, 70, 96)
+    return None
+
+
+AXO_Q: dict[str, Any] = dict(
+    pal=AXO, leg_h=2.0, leg=(1.0, 1.0), legs_at=[(-4.5, 4.33), (4.5, 4.33), (-4.5, -3.83), (4.5, -3.83)], zoff=-1.33,
+    body=(3.83, 2.67, 6.5), neck=(2.67, 6.5), head=((0, 0.33, 3.33), (5.0, 3.33, 3.33)),
+    head_tex=lambda e, l: face_tex(e, l, [(4, 7, 3, 3), (23, 7, 3, 3)], (30, 16, 24), None, axo_smile),
+    head_extra=[(f"gill{k}", (sx * 5.83, y, 1.67), (0.83, 0.5, 0.5), None, GILL)
+                for k, (sx, y) in enumerate([(-1, 3.0), (-1, 1.33), (-1, -0.33), (1, 3.0), (1, 1.33), (1, -0.33)])],
+    tail=((0, 2.67, -6.5), (0, 0, -4.33), (0.4, 2.0, 4.33), AXO), tail_yaw=True,
+    rear=12, foot=(6.0, 11.0), outline=(110, 40, 70), swing=0.6, side_yaw=math.radians(50), jump=0.8, ground=88.0)
+
+
+# ---- glow squid (floats) -----------------------------------------------------------------
+GSQ = [(16, 60, 70), (20, 80, 90), (26, 102, 110), (34, 124, 128), (44, 146, 144), (58, 166, 160), (78, 186, 176), (104, 206, 194)]
+
+
+SQ = [(20, 34, 60), (26, 44, 76), (34, 56, 94), (44, 70, 112), (56, 86, 130), (70, 102, 148), (88, 120, 164), (108, 140, 180)]
+
+
+def gsquid_tex(eyes: str, look: float, glow: float, lit: bool = True) -> P.Tex:
+    base = face_tex(eyes, look, [(5, 9, 4, 4), (13, 9, 4, 4)], (12, 20, 24), (230, 250, 250))
+
+    def tex(face, u, v, W, H):
+        r = base(face, u, v, W, H)
+        if r is not None and not isinstance(r, float):
+            return r
+        if lit and P.hash2(u, v, 71) < 0.07:
+            k = 0.55 + 0.45 * glow
+            return P.Glow((int(110 * k), int(250 * k), int(226 * k)))
+        return r
+    return tex
+
+
+def gsquid_parts(yaw=FRONT_YAW, lift=0.0, dx=0.0, sc=(1.0, 1.0, 1.0), roll=0.0, pitch=0.0, spread=0.25, eyes="open",
+                 look=0.0, glow=1.0, wave=0.0, pal=None, lit=True) -> list[P.Part]:
+    pal = pal or GSQ
+    root = P.Rig(P.chain(P.rot_y(yaw), P.scale(*sc)), (dx, lift, 0.0))
+    body = root.child((0, 9.0, 0), P.chain(P.rot_z(roll), P.rot_x(pitch)))
+    parts = [body.box("head", (0, 5.0, 0), (3.67, 5.0, 3.67), gsquid_tex(eyes, look, glow, lit), pal, 0)]
+    for k in range(8):
+        ang = k * TAU / 8 + TAU / 16
+        sp = spread + 0.12 * math.sin(wave + k * 1.3)
+        t = body.child((2.4 * math.cos(ang), 0.33, 2.4 * math.sin(ang)), P.chain(P.rot_y(math.pi / 2 - ang), P.rot_x(-sp)))
+        parts.append(t.box(f"t{k}", (0, -3.0, 0), (0.5, 3.0, 0.5), lambda *_: -0.05, pal, 2 + k))
+    return parts
+
+
+def gsquid_frame(state: str, f: int, squid: bool = False) -> Image.Image:
+    under, over = P.FX(), P.FX()
+    p = phase(state, f)
+    kw: KW = dict(wave=p, pal=SQ if squid else GSQ, lit=not squid)
+    if state == "idle":
+        kw.update(lift=0.8 * math.sin(p), spread=0.22 + 0.12 * math.sin(p), glow=0.6 + 0.4 * math.sin(p), look=0.6 * math.sin(p))
+    elif state in WALK:
+        kw.update(yaw=SIDE_YAW * facing(state), pitch=0.42, lift=1.2 + 0.8 * math.sin(2 * p), spread=0.3 + 0.28 * math.sin(2 * p), look=0.8)
+        gx, gy = P.project((-facing(state) * 4.0, 7.0 + kw["lift"], 0))
+        for k in range(3):
+            age = (f + k * 5) % 16
+            if age < 10:
+                bubble_dot(over, gx - facing(state) * age * 1.3, gy - age * 1.6 + k * 3, 220 - age * 20)
+    elif state == "waving":
+        w = math.sin(p)
+        kw.update(roll=0.2 * w, eyes="happy", spread=0.35 + 0.15 * w, lift=0.6)
+    elif state == "jumping":
+        kw.update(lift=[0.0, 1.5, 4.0, 5.2, 3.2, 0.8][f], spread=[0.55, 0.05, 0.15, 0.4, 0.3, 0.45][f],
+                  sc=(1, [0.92, 1.12, 1.05, 1.0, 1.02, 0.96][f], 1), eyes="happy" if f in (2, 3) else "open")
+    elif state == "failed":
+        kw.update(eyes="x", lift=[0.0, 0.0, -0.4, -0.8, -1.0, -0.6][f], spread=[0.3, 0.6, 0.7, 0.5, 0.35, 0.3][f],
+                  roll=[0, 0.1, -0.1, 0.06, 0, 0][f], glow=0.3)
+    elif state == "waiting":
+        kw.update(look=1.2 * math.sin(p), roll=0.08 * math.sin(p), lift=0.5 * math.sin(2 * p), spread=0.25)
+    elif state == "running":
+        kw.update(spread=0.3 + 0.3 * math.sin(2 * p), lift=1.0 * abs(math.sin(p)), pitch=0.15)
+    elif state == "review":
+        kw.update(pitch=0.3, eyes="down", look=-0.6, lift=-0.5)
+    parts = gsquid_parts(**kw)
+    P.shadow(under, (kw.get("dx", 0.0), 0, 0), P.footprint(4, 4, kw.get("yaw", FRONT_YAW)), 3 + kw.get("lift", 0.0), alpha=(56, 32))
+    common(state, f, parts, over)
+    if state == "failed" and 1 <= f <= 4:      # ink cloud
+        cx, cy = body_center(parts, ("head",))
+        age = f - 1
+        for k in range(6):
+            a = k * TAU / 6 + 0.3
+            r = 6 + 3 * age
+            P.puff(over, cx + math.cos(a) * r * 1.2, cy + 10 + math.sin(a) * r * 0.5, 3 + age * 0.6, 220 - age * 40, dark=True)
+    if state == "running":
+        cx, cy = body_center(parts, ("head",))
+        for k in range(2):
+            age = (f + 3 * k) % 6
+            bubble_dot(over, cx - 8 + 16 * k, cy + 14 - age * 3, 220 - age * 30)
+    return P.render(parts, under, over, outline=(12, 22, 40) if squid else (10, 44, 50))
+
+
+# ---- blaze (floats) ----------------------------------------------------------------------
+BLZ = [(150, 90, 10), (186, 120, 20), (214, 150, 30), (234, 176, 46), (246, 196, 70), (252, 214, 100), (255, 230, 140), (255, 242, 180)]
+ROD = [(160, 80, 10), (196, 110, 20), (224, 140, 30), (240, 170, 50), (250, 196, 80)]
+
+
+def blaze_mouth(face, u, v, W, H):
+    if face == "front" and v == 13 and 7 <= u <= 12:
+        return (120, 60, 10)
+    return None
+
+
+def rod_tex(face, u, v, W, H):
+    if face == "top" or v == 0:
+        return P.Glow((255, 236, 150))
+    return None
+
+
+def blaze_parts(yaw=FRONT_YAW, lift=0.0, dx=0.0, roll=0.0, hy=0.0, hp=0.0, spin=0.0, droop=0.0, ring=1.0,
+                eyes="open", look=0.0) -> list[P.Part]:
+    root = P.Rig(P.rot_y(yaw), (dx, lift, 0.0))
+    head = root.child((0, 15.0, 0), P.chain(P.rot_y(hy), P.rot_x(hp), P.rot_z(roll)))
+    parts = [head.box("head", (0, 0, 0), (3.33, 3.33, 3.33),
+                      face_tex(eyes, look, [(3, 8, 5, 2), (12, 8, 5, 2)], (70, 34, 6), None, blaze_mouth), BLZ, 0)]
+    for ri, (y, r, ph, dirn) in enumerate(((11.0, 5.2, 0.0, 1), (7.7, 4.5, TAU / 8, -1), (4.4, 3.8, 0.0, 1))):
+        for k in range(4):
+            a = ph + k * TAU / 4 + dirn * spin
+            parts.append(root.box(f"rod{ri}{k}", (r * ring * math.cos(a), y - droop * (ri + 1) * 0.9, r * ring * math.sin(a)),
+                                  (0.5, 1.83, 0.5), rod_tex, ROD, 2 + ri * 4 + k))
+    return parts
+
+
+def blaze_frame(state: str, f: int) -> Image.Image:
+    under, over = P.FX(), P.FX()
+    p = phase(state, f)
+    n = nframes(state)
+    kw: KW = dict(spin=(TAU / 4) * f / n)
+    out = False
+    if state == "idle":
+        kw.update(lift=0.8 * math.sin(p), look=0.6 * math.sin(p))
+    elif state in WALK:
+        kw.update(yaw=SIDE_YAW * facing(state), lift=1.0 + 0.7 * math.sin(2 * p), spin=2 * (TAU / 4) * f / n, hp=0.12, look=0.8)
+    elif state == "waving":
+        kw.update(roll=0.12 * math.sin(p), eyes="happy", lift=0.5, ring=1.0 + 0.08 * math.sin(2 * p))
+    elif state == "jumping":
+        kw.update(lift=[0.0, 1.5, 4.0, 5.2, 3.0, 0.6][f], ring=[0.9, 1.1, 1.25, 1.3, 1.15, 0.95][f], eyes="happy" if f in (2, 3) else "open")
+    elif state == "failed":
+        out = f >= 2
+        kw.update(droop=[0.0, 0.3, 0.6, 0.9, 0.9, 0.5][f], eyes="x", hp=[0, 0.1, 0.2, 0.25, 0.25, 0.15][f],
+                  spin=kw["spin"] if f < 2 else 0.0)
+    elif state == "waiting":
+        kw.update(hy=0.4 * math.sin(p), look=math.sin(p), lift=0.6 * math.sin(2 * p))
+    elif state == "running":
+        kw.update(spin=2 * (TAU / 4) * f / n, lift=0.8 * abs(math.sin(p)))
+    elif state == "review":
+        kw.update(hp=0.3, eyes="down", look=-0.6)
+    parts = blaze_parts(**kw)
+    P.shadow(under, (kw.get("dx", 0.0), 0, 0), P.footprint(4.5, 4.5, kw.get("yaw", FRONT_YAW)), 2 + kw.get("lift", 0.0), alpha=(60, 34))
+    common(state, f, parts, over)
+    x0, y0, x1, y1 = gbbox(parts)
+    cx = (x0 + x1) / 2
+    if not out:
+        for k in range(7 if state != "running" else 11):
+            age = (f * 3 + k * 7) % 20
+            P.spark(over, cx + (P.hash2(k, 1, 5) - 0.5) * (x1 - x0), y1 - 6 - age * 2.2, 220 - age * 10)
+    hx0, hy0, hx1, _ = gbbox(parts, ("head",))
+    if out or state in WALK:
+        for k in range(3 if out else 2):
+            age = (f + k * 2) % 6
+            P.puff(over, (hx0 + hx1) / 2 + (k - 1) * 5 - (facing(state) * age * 2 if state in WALK else 0),
+                   max(MARGIN + 3, hy0 - 3 - age * 2.5), 2.5 + age * 0.4, 170 - age * 25, dark=True)
+    return P.render(parts, under, over, outline=(110, 58, 8))
+
+
+# ---- magma cube (hops, splits open) --------------------------------------------------------
+MAG = [(40, 10, 10), (58, 14, 12), (76, 20, 14), (96, 28, 16), (116, 36, 18), (136, 46, 20), (156, 58, 24), (176, 72, 30)]
+
+
+def mag_slab_tex(face, u, v, W, H):
+    if P.hash2(u // 2, v, 31) < 0.12 or (face == "top" and P.hash2(u, v // 2, 37) < 0.08):
+        return P.Glow((255, 140 + int(60 * P.hash2(u, v, 5)), 40))
+    return None
+
+
+def mag_face_extra(face, u, v, W, H):
+    if face == "front" and v <= 6 and any(ex - 1 <= u <= ex + 8 for ex in (6, 22)):
+        return (34, 8, 8)
+    return mag_slab_tex(face, u, v, W, H)
+
+
+def magma_parts(yaw=FRONT_YAW, lift=0.0, dx=0.0, sc=(1.0, 1.0, 1.0), roll=0.0, pitch=0.0, gap=0.15, eyes="open",
+                look=0.0) -> list[P.Part]:
+    root = P.Rig(P.chain(P.rot_y(yaw), P.rot_z(roll), P.rot_x(pitch), P.scale(*sc)), (dx, lift, 0.0))
+    parts: list[P.Part] = []
+    y = 0.0
+    for k in range(4):
+        top = k == 3
+        tex = face_tex(eyes, look, [(6, 1, 8, 5), (22, 1, 8, 5)], P.Glow((255, 214, 90)), None, mag_face_extra) if top else mag_slab_tex
+        parts.append(root.box("head" if top else f"slab{k}", (0, y + 1.33, 0), (6.0, 1.33, 6.0), tex, MAG, k))
+        y += 2.67 + gap
+    h = y - gap
+    parts.append(root.box("core", (0, h / 2, 0), (4.33, max(0.5, h / 2 - 0.4), 4.33), lambda *_: P.Glow((255, 120, 30)), MAG, 9))
+    return parts
+
+
+def magma_frame(state: str, f: int) -> Image.Image:
+    P.set_ground(SLIME_GROUND)
+    under, over = P.FX(), P.FX()
+    p = phase(state, f)
+
+    def sq(sy: float) -> tuple[float, float, float]:
+        sx = 1 + (1 - sy) * 0.6
+        return (sx, sy, sx)
+
+    kw: KW = {}
+    if state == "idle":
+        kw = dict(sc=sq(1 + 0.03 * math.sin(p)), gap=0.1 + 0.15 * (0.5 + 0.5 * math.sin(p)), look=0.6 * math.sin(p))
+    elif state in WALK:
+        sy, air = WALK_SY[f], WALK_LIFT[f] > 0
+        kw = dict(yaw=SIDE_YAW * facing(state), lift=WALK_LIFT[f], sc=sq(sy), gap=(0.35 + max(0.0, sy - 1) * 4) if air else 0.08,
+                  pitch=0.06 if air else 0.0, look=0.8)
+        if f >= 12:
+            age = f - 12
+            for side in (-1, 1):
+                gx, gy = P.project((side * 6.5, 0, 3))
+                P.spark(over, gx + side * age * 2, gy - 3 - age * 2, 230 - age * 50)
+    elif state == "waving":
+        kw = dict(roll=0.12 * math.sin(p), sc=sq(1 + 0.05 * math.sin(2 * p)), eyes="happy", gap=0.3)
+    elif state == "jumping":
+        kw = dict(lift=[0.0, 1.5, 5.8, 7.4, 4.0, 0.0][f], sc=sq([0.7, 1.25, 1.08, 0.98, 1.06, 0.75][f]),
+                  gap=[0.05, 0.9, 0.75, 0.5, 0.6, 0.05][f], eyes="happy" if f in (2, 3) else "open")
+    elif state == "failed":
+        sy = [1.0, 0.85, 0.7, 0.56, 0.6, 0.8][f]
+        sx = [1.0, 1.1, 1.2, 1.3, 1.28, 1.12][f]
+        kw = dict(sc=(sx, sy, sx), eyes="x" if f >= 2 else "blink", gap=0.05)
+    elif state == "waiting":
+        kw = dict(sc=sq(1 + 0.03 * math.sin(2 * p)), look=1.2 * math.sin(p), gap=0.2)
+    elif state == "running":
+        lift = 1.8 * abs(math.sin(p))
+        kw = dict(lift=lift, sc=sq(1.06 if lift > 0.6 else 0.86), gap=0.4 if lift > 0.6 else 0.08)
+    elif state == "review":
+        kw = dict(pitch=0.14, eyes="down", look=-0.8, gap=0.15)
+    parts = magma_parts(**kw)
+    sc = kw.get("sc", (1, 1, 1))
+    P.shadow(under, (0, 0, 0), P.footprint(6.3 * sc[0], 6.3 * sc[2], kw.get("yaw", FRONT_YAW)), kw.get("lift", 0.0))
+    common(state, f, parts, over)
+    if state == "failed" and f >= 2:
+        cx, cy = body_center(parts, ("head",))
+        age = f - 2
+        for k in range(6):
+            a = math.pi + k * math.pi / 5
+            P.spark(over, cx + math.cos(a) * (12 + age * 5) * 1.3, cy + math.sin(a) * (10 + age * 4) + age * age, 240 - age * 50)
+        P.puff(over, cx + 4, max(MARGIN + 4, cy - 12 - age * 4), 3 + age * 0.6, 160 - age * 30, dark=True)
+    img = P.render(parts, under, over, outline=(26, 6, 6))
+    P.set_ground(93.0)
+    return img
+
+
+# ---- shulker -----------------------------------------------------------------------------
+SHUL = [(70, 40, 80), (90, 52, 102), (110, 66, 124), (130, 82, 146), (150, 100, 166), (168, 120, 182), (186, 142, 198), (204, 166, 214)]
+SHEAD = [(150, 160, 60), (176, 186, 74), (198, 206, 90), (216, 222, 108), (230, 234, 128), (240, 244, 150)]
+
+
+def shell_base_tex(face, u, v, W, H):
+    if face == "top":
+        return (36, 18, 44)
+    if face in P.SIDES and v <= 1:
+        return 0.12
+    return None
+
+
+def shell_lid_tex(face, u, v, W, H):
+    if face == "bottom":
+        return (36, 18, 44)
+    if face in P.SIDES and v >= H - 2:
+        return 0.14
+    if face == "top" and (u in (0, W - 1) or v in (0, H - 1)):
+        return 0.1
+    return None
+
+
+def shulker_parts(yaw=FRONT_YAW, lift=0.0, dx=0.0, sc=(1.0, 1.0, 1.0), roll=0.0, open_=0.0, hy=0.0, hdy=0.0,
+                  eyes="open", look=0.0) -> list[P.Part]:
+    root = P.Rig(P.chain(P.rot_y(yaw), P.rot_z(roll), P.scale(*sc)), (dx, lift, 0.0))
+    hd = root.child((0, 6.0 + open_ * 4.0 + hdy, 0), P.rot_y(hy))
+    lid = root.child((0, 7.33, -6.33), P.rot_x(-open_ * 0.9))
+    return [root.box("base", (0, 3.67, 0), (6.0, 3.67, 6.0), shell_base_tex, SHUL, 1),
+            hd.box("head", (0, 0, 0.5), (3.0, 3.0, 3.0), face_tex(eyes, look, [(3, 7, 3, 3), (12, 7, 3, 3)], (28, 26, 12), (240, 240, 210)), SHEAD, 0),
+            lid.box("lid", (0, 2.33, 6.33), (6.33, 2.33, 6.33), shell_lid_tex, SHUL, 2)]
+
+
+def shulker_frame(state: str, f: int) -> Image.Image:
+    under, over = P.FX(), P.FX()
+    p = phase(state, f)
+    flash = 0.0
+
+    def sq(sy: float) -> tuple[float, float, float]:
+        sx = 1 + (1 - sy) * 0.5
+        return (sx, sy, sx)
+
+    kw: KW = {}
+    if state == "idle":
+        kw = dict(open_=[0.0, 0.12, 0.42, 0.48, 0.2, 0.02][f], look=[0, 0, 0.8, -0.6, 0, 0][f], sc=sq(1 + 0.015 * math.sin(p)))
+    elif state in WALK:
+        kw = dict(yaw=SIDE_YAW * facing(state), lift=WALK_LIFT[f] * 0.7, sc=sq(WALK_SY[f]), open_=0.06 + 0.1 * WALK_LIFT[f] / 4.4, look=0.8)
+        if f >= 12:
+            age = f - 12
+            for k in range(4):
+                gx, gy = P.project(((k - 1.5) * 4.0, 0, 4))
+                P.portal(over, gx, gy - 2 - age * 2, 230 - age * 50)
+    elif state == "waving":
+        w = math.sin(p)
+        kw = dict(open_=0.95, hdy=0.6 + 0.4 * abs(w), hy=0.25 * w, eyes="happy", roll=0.06 * w)
+    elif state == "jumping":
+        kw = dict(lift=[0.0, 2.0, 5.2, 6.4, 3.6, 0.0][f], sc=sq([0.8, 1.12, 1.04, 1.0, 1.03, 0.86][f]),
+                  open_=[0.0, 0.1, 0.45, 0.8, 0.35, 0.0][f], eyes="happy" if f in (2, 3) else "open")
+    elif state == "failed":
+        kw = dict(open_=[0.6, 0.0, 0.0, 0.0, 0.0, 0.12][f], dx=[0, 0.4, -0.4, 0.3, -0.2, 0][f], eyes="x")
+        flash = [0, 0.5, 0.2, 0, 0, 0][f]
+    elif state == "waiting":
+        kw = dict(open_=0.38, hy=0.45 * math.sin(p), look=math.sin(p))
+    elif state == "running":
+        h = abs(math.sin(p))
+        kw = dict(lift=1.6 * h, sc=sq(1.05 if h > 0.5 else 0.88), open_=0.08 + 0.12 * h)
+    elif state == "review":
+        kw = dict(open_=0.7, eyes="down", look=-0.6, hy=-0.25, hdy=-0.3)
+    parts = shulker_parts(**kw)
+    P.shadow(under, (kw.get("dx", 0.0), 0, 0), P.footprint(6.3, 6.3, kw.get("yaw", FRONT_YAW)), kw.get("lift", 0.0))
+    common(state, f, parts, over)
+    if state == "failed" and 1 <= f <= 3:
+        cx, cy = body_center(parts, ("base", "lid"))
+        r = 9 + 5 * (f - 1)
+        for k in range(10):
+            a = k * TAU / 10 + f * 0.5
+            P.portal(over, cx + math.cos(a) * r * 1.3, cy + math.sin(a) * r * 0.7, 240 - (f - 1) * 50)
+    return P.render(parts, under, over, flash=flash, flash_rgb=(200, 120, 255), outline=(46, 26, 58))
+
+
+# ---- warden ------------------------------------------------------------------------------
+WARD = [(10, 26, 32), (14, 36, 44), (18, 46, 56), (24, 58, 70), (30, 72, 86), (38, 88, 104), (48, 104, 120), (60, 120, 138)]
+SOUL = (70, 232, 240)
+
+
+def _soul(k: float) -> P.Glow:
+    return P.Glow((int(SOUL[0] * k), int(SOUL[1] * k), int(SOUL[2] * k)))
+
+
+def warden_body_tex(glow: float) -> P.Tex:
+    def tex(face, u, v, W, H):
+        if face == "front" and 6 <= v <= 18 and abs(u - W / 2) <= 7:
+            if v % 4 == 0:
+                return (8, 20, 26)
+            if abs(u - W / 2) <= 4 and P.hash2(u, v, 53) < 0.5 + 0.3 * glow:
+                return _soul(0.5 + 0.5 * glow)
+        return _shade_ends(face, u, v, W, H)
+    return tex
+
+
+def warden_head_tex(eyes: str, glow: float) -> P.Tex:
+    def tex(face, u, v, W, H):
+        if face == "front":
+            if v in (11, 12) and (u in (4, 5) or u in (W - 6, W - 5)):
+                return _soul(0.4 + 0.6 * glow)
+            if v >= 15 and 7 <= u <= W - 8 and eyes != "happy":
+                return (6, 14, 18)
+        return None
+    return tex
+
+
+def warden_parts(yaw=FRONT_YAW, lift=0.0, dx=0.0, sc=(1.0, 1.0, 1.0), roll=0.0, pitch=0.0, hy=0.0, hp=0.0, hr=0.0,
+                 arms=(0.0, 0.0), spread=(0.0, 0.0), legs=(0.0, 0.0), eyes="open", glow=1.0, ears=0.0) -> list[P.Part]:
+    root = P.Rig(P.chain(P.rot_y(yaw), P.scale(*sc)), (dx, lift, 0.0))
+    hips = root.child((0, 8.0, 0), P.chain(P.rot_z(roll), P.rot_x(pitch)))
+    parts = [hips.box("body", (0, 4.67, 0), (4.67, 4.67, 2.67), warden_body_tex(glow), WARD, 1)]
+    neck = hips.child((0, 9.33, 0.33), P.chain(P.rot_y(hy), P.rot_x(hp), P.rot_z(hr)))
+    parts.append(neck.box("head", (0, 3.33, 0), (4.0, 3.33, 3.33), warden_head_tex(eyes, glow), WARD, 0))
+    ear_glow = 0.6 + 0.4 * glow
+    for k, sgn in enumerate((-1, 1)):
+        e = neck.child((sgn * 4.0, 5.33, 0), P.rot_z(-sgn * (0.35 + ears)))
+        parts.append(e.box(f"ear{k}", (sgn * 0.5, 1.67, 0), (0.5, 1.67, 1.33), lambda *_, g=ear_glow: _soul(g), WARD, 10 + k))
+    for k, sgn in enumerate((-1, 1)):
+        arm = hips.child((sgn * 5.67, 8.67, 0), P.chain(P.rot_x(arms[k]), P.rot_z(sgn * spread[k])))
+        parts.append(arm.box(f"arm{k}", (0, -5.33, 0), (1.33, 5.33, 1.33), _shade_ends, WARD, 4 + k))
+    for k, sgn in enumerate((-1, 1)):
+        leg = root.child((sgn * 2.33, 8.0, 0), P.rot_x(legs[k]))
+        parts.append(leg.box(f"leg{k}", (0, -4.0, 0), (1.67, 4.0, 1.67), _shade_ends, WARD, 6 + k))
+    return parts
+
+
+def warden_frame(state: str, f: int) -> Image.Image:
+    under, over = P.FX(), P.FX()
+    p = phase(state, f)
+    flash = 0.0
+    kw: KW = {}
+    if state == "idle":
+        kw = dict(sc=(1, 1 + 0.02 * math.sin(p), 1), glow=0.5 + 0.5 * math.sin(p), ears=0.08 * math.sin(2 * p),
+                  arms=(0.05 * math.sin(p), -0.05 * math.sin(p)), hy=0.08 * math.sin(p))
+    elif state in WALK:
+        a = 0.38 * math.sin(p)
+        kw = dict(yaw=SIDE_YAW * facing(state), legs=(-a, a), arms=(0.32 * math.sin(p), -0.32 * math.sin(p)), lift=-8 * (1 - math.cos(a)),
+                  roll=0.04 * math.sin(p), hp=0.04 * math.cos(2 * p), glow=0.6 + 0.4 * math.sin(2 * p), ears=0.06 * math.sin(2 * p))
+        walk_dust(under, f, facing(state), 4.0)
+    elif state == "waving":
+        w = math.sin(p)
+        kw = dict(arms=(0.05, -2.2 - 0.2 * w), spread=(0.0, 0.15 + 0.1 * w), hr=0.08 * w, ears=0.25 + 0.1 * w, glow=1.0)
+    elif state == "jumping":       # roar
+        kw = dict(lift=[0.0, 0.8, 1.8, 2.2, 1.0, 0.0][f], arms=(-0.3, -0.3), spread=([0.2, 0.5, 0.7, 0.7, 0.5, 0.2][f],) * 2,
+                  hp=[0, -0.15, -0.25, -0.25, -0.1, 0][f], ears=[0, 0.3, 0.5, 0.5, 0.3, 0][f], glow=1.0)
+        flash = [0, 0, 0.25, 0.35, 0, 0][f]
+    elif state == "failed":
+        kw = dict(ears=[-0.2, -0.4, -0.5, -0.5, -0.4, -0.3][f], hp=[0, 0.15, 0.25, 0.3, 0.25, 0.2][f], dx=[0, 0.2, -0.2, 0.15, -0.1, 0][f],
+                  glow=[1, 0.5, 0.2, 0.1, 0.2, 0.4][f], arms=(0.1, 0.1), spread=(0.05, 0.05))
+    elif state == "waiting":
+        kw = dict(hy=0.4 * math.sin(p), hp=0.1, ears=0.15 + 0.1 * math.sin(2 * p), glow=0.7 + 0.3 * math.sin(p))
+    elif state == "running":
+        a = 0.5 * math.sin(p)
+        kw = dict(legs=(-a, a), arms=(0.45 * math.sin(p), -0.45 * math.sin(p)), lift=-8 * (1 - math.cos(a)), roll=0.04 * math.sin(p))
+    elif state == "review":
+        kw = dict(arms=(-1.0, -1.0), hp=0.35 + 0.04 * math.sin(p), glow=0.8)
+    parts = warden_parts(**kw)
+    P.shadow(under, (kw.get("dx", 0.0), 0, 0), P.footprint(6.0, 3.0, kw.get("yaw", FRONT_YAW)), kw.get("lift", 0.0))
+    if state == "review":
+        x0, y0, x1, y1 = gbbox(parts, ("arm0", "arm1"))
+        P.book(over, int((x0 + x1) / 2 - 11), int(y1 - 10), f)
+    else:
+        common(state, f, parts, over)
+    if state == "jumping" and 2 <= f <= 4:        # sonic rings in front of the head
+        hx0, hy0, hx1, hy1 = gbbox(parts, ("head",))
+        cx, cy = (hx0 + hx1) / 2, (hy0 + hy1) / 2
+        r = 5 + (f - 2) * 5
+        for k in range(14):
+            a = k * TAU / 14
+            P.sparkle(over, cx + math.cos(a) * r, cy + math.sin(a) * r * 0.6, 230 - (f - 2) * 60, c=SOUL)
+    if state == "failed" and f >= 1:
+        cx, cy = body_center(parts, ("body",))
+        for k in range(6):
+            age = (f + k) % 6
+            P.sparkle(over, cx + (P.hash2(k, 2, 9) - 0.5) * 30, cy - 10 + age * 4, 220 - age * 30, c=SOUL)
+    return P.render(parts, under, over, flash=flash, flash_rgb=SOUL, outline=(44, 96, 108))
+
+
 # ================================================================== registry / build =====
 SPECIES: dict[str, dict[str, Any]] = {
     "creeper": dict(name="Creeper", desc="接近遊戲比例的苦力怕：立體方塊、四腳交替走路，失敗時會膨脹、閃光、冒煙。", frame=creeper_frame),
@@ -907,6 +1571,16 @@ SPECIES: dict[str, dict[str, Any]] = {
     "bee": dict(name="Bee", desc="毛茸茸的蜜蜂：半透明翅膀一直拍，揮手時會跳搖擺舞，跳躍時翻滾一圈。", frame=bee_frame),
     "enderman": dict(name="Enderman", desc="終界使者：長手長腳、紫色眼睛，跳躍時傳送，等待時抱著一塊草方塊。", frame=enderman_frame),
     "lantern": dict(name="Lantern", desc="原創的銅製小燈籠：發光的玻璃臉，提把會晃，失敗時火光熄滅再點亮。", frame=lantern_frame),
+    "shulker": dict(name="Shulker", desc="界伏蚌：紫色的殼會開合，裡面的頭會探出來；移動時合殼跳著走，失敗時猛地關上、冒紫色粒子。", frame=shulker_frame),
+    "blaze": dict(name="Blaze", desc="烈焰使者：火棒繞著頭旋轉、一直冒火花，失敗時火棒垂下、冒黑煙。", frame=blaze_frame),
+    "magma-cube": dict(name="Magma Cube", desc="岩漿立方怪：跳起來時一層層分開，露出發光的岩漿核心。", frame=magma_frame),
+    "mooshroom": dict(name="Mooshroom", desc="哞菇：紅白花紋的牛，背上和頭上長著紅蘑菇。", frame=lambda s, f: quad_frame(MOOSH, s, f)),
+    "polar-bear": dict(name="Polar Bear", desc="北極熊：白色、厚重，走路慢慢晃。", frame=lambda s, f: quad_frame(BEAR_Q, s, f)),
+    "rabbit": dict(name="Rabbit", desc="兔子：一蹦一跳地走，耳朵會晃。", frame=lambda s, f: quad_frame(RAB_Q, s, f)),
+    "axolotl": dict(name="Axolotl", desc="美西螈：粉紅色、頭上有六根腮，尾巴左右擺。", frame=lambda s, f: quad_frame(AXO_Q, s, f)),
+    "glow-squid": dict(name="Glow Squid", desc="發光魷魚：身上的光點會閃，觸手一收一放地游。", frame=gsquid_frame),
+    "squid": dict(name="Squid", desc="魷魚：深藍色，觸手一收一放地游，失敗時噴墨。", frame=lambda s, f: gsquid_frame(s, f, squid=True)),
+    "warden": dict(name="Warden", desc="伏守者：沒有眼睛，胸口的靈魂會發光，跳躍時會怒吼。", frame=warden_frame),
 }
 
 
@@ -1000,15 +1674,17 @@ def preview(slug: str, frames: dict[str, list[Image.Image]]) -> None:
 
 
 def overview(order: list[str]) -> None:
-    """docs/pets.gif: all pets walking right (row 1) and their idle/wave/jump loops (row 2)."""
+    """docs/pets.gif: every pet walking right, 8 per row."""
     sheets = {n: Image.open(ROOT / "pets" / n / "spritesheet.png").convert("RGBA") for n in order}
     W, H = P.FRAME_W, P.FRAME_H
+    cols = min(8, len(order))
+    rows = (len(order) + cols - 1) // cols
     out = []
     for step in range(WALK_N):
-        img = Image.new("RGB", (W * len(order), H), (30, 32, 38))
+        img = Image.new("RGB", (W * cols, H * rows), (30, 32, 38))
         for i, n in enumerate(order):
             fr = sheets[n].crop((step * W, H, step * W + W, 2 * H))
-            img.paste(fr, (i * W, 0), fr)
+            img.paste(fr, ((i % cols) * W, (i // cols) * H), fr)
         out.append(img)
     q = _quantize(out, [0, 5, 10])
     q[0].save(ROOT / "docs" / "pets.gif", save_all=True, append_images=q[1:], duration=DURATIONS, loop=0, optimize=True)

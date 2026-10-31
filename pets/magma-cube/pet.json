@@ -1,0 +1,6 @@
+{
+  "id": "magma-cube",
+  "displayName": "Magma Cube",
+  "description": "岩漿立方怪：跳起來時一層層分開，露出發光的岩漿核心。",
+  "spritesheetPath": "spritesheet.png"
+}

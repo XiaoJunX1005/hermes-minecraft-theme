@@ -1,0 +1,6 @@
+{
+  "id": "rabbit",
+  "displayName": "Rabbit",
+  "description": "兔子：一蹦一跳地走，耳朵會晃。",
+  "spritesheetPath": "spritesheet.png"
+}

@@ -6,7 +6,7 @@ $ErrorActionPreference = 'Stop'
 $repo = if ($env:HMT_REPO) { $env:HMT_REPO } else { 'https://raw.githubusercontent.com/XiaoJunX1005/hermes-minecraft-theme/main' }
 $skins = 'minecraft','minecraft-nether','minecraft-end','minecraft-snow','minecraft-cherry','minecraft-ocean','minecraft-lush','minecraft-desert','minecraft-mushroom','minecraft-deepdark'
 $plugins = 'minecraft-activity'
-$pets = 'creeper','pig','chicken','slime','bee','enderman','lantern'
+$pets = 'creeper','pig','chicken','slime','bee','enderman','lantern','shulker','blaze','magma-cube','mooshroom','polar-bear','rabbit','axolotl','squid','glow-squid','warden'
 $retired = @{ 'creeper-blocky'='creeper'; 'creeper-carved'='creeper'; 'creeper-tall'='creeper'; 'creeper-buddy'='creeper'; 'lantern-buddy'='lantern'; 'mc-pig'='pig'; 'mc-chicken'='chicken'; 'mc-slime'='slime'; 'mc-bee'='bee'; 'mc-enderman'='enderman' }
 $hhome = if ($env:HERMES_HOME) { $env:HERMES_HOME }
          elseif (Test-Path "$env:LOCALAPPDATA\hermes") { "$env:LOCALAPPDATA\hermes" }

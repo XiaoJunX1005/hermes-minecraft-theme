@@ -1,0 +1,6 @@
+{
+  "id": "shulker",
+  "displayName": "Shulker",
+  "description": "界伏蚌：紫色的殼會開合，裡面的頭會探出來；移動時合殼跳著走，失敗時猛地關上、冒紫色粒子。",
+  "spritesheetPath": "spritesheet.png"
+}

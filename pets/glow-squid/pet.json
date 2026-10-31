@@ -1,0 +1,6 @@
+{
+  "id": "glow-squid",
+  "displayName": "Glow Squid",
+  "description": "發光魷魚：身上的光點會閃，觸手一收一放地游。",
+  "spritesheetPath": "spritesheet.png"
+}
