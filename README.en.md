@@ -71,7 +71,7 @@ hermes pets off          # turn the pet off
 | `bee` | Bee: translucent wings always beating, waggle dance when waving, barrel roll when jumping |
 | `enderman` | Enderman: purple eyes, teleports when jumping, holds a grass block while waiting |
 | `lantern` | An original little lantern: glowing glass face, swinging handle, goes out and relights when something fails |
-| `shulker` | Shulker: the shell opens and its head peeks out; hops along closed, slams shut with purple particles when something fails |
+| `shulker` | Shulker: the shell opens and its head peeks out; never walks - when it moves it vanishes into purple particles and reappears where it stops; slams shut when something fails |
 | `blaze` | Blaze: rods spin around its head, sparks rise; rods droop and it smokes when something fails |
 | `magma-cube` | Magma Cube: splits into layers when it jumps, showing the glowing core |
 | `mooshroom` | Mooshroom: red-and-white, with red mushrooms on its back and head |

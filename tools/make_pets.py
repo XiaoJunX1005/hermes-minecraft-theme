@@ -1223,33 +1223,66 @@ def gsquid_frame(state: str, f: int, squid: bool = False) -> Image.Image:
 
 
 # ---- blaze (floats) ----------------------------------------------------------------------
-BLZ = [(150, 90, 10), (186, 120, 20), (214, 150, 30), (234, 176, 46), (246, 196, 70), (252, 214, 100), (255, 230, 140), (255, 242, 180)]
-ROD = [(160, 80, 10), (196, 110, 20), (224, 140, 30), (240, 170, 50), (250, 196, 80)]
+# Not one flat yellow: golden-yellow skin with orange and brown patches, brighter on top;
+# rods run from a hot pale tip through gold and orange to a dark orange-brown base.
+BLZ = [(120, 60, 8), (160, 90, 12), (200, 126, 20), (230, 160, 34), (246, 192, 56), (252, 214, 90), (255, 232, 130), (255, 246, 186)]
+_BLZ_TONES = [(150, 76, 12), (196, 110, 18), (230, 152, 28), (246, 194, 52), (255, 226, 110)]
+BLZ_EYE = (44, 22, 6)
 
 
-def blaze_mouth(face, u, v, W, H):
-    if face == "front" and v == 13 and 7 <= u <= 12:
-        return (120, 60, 10)
-    return None
+def blaze_skin(u: int, v: int, H: int, top: bool = False) -> tuple[int, int, int]:
+    n = 0.55 * P._vn(u / 2.2, v / 2.2, 61) + 0.45 * P.hash2(u // 2, v // 2, 67)
+    g = (n - 0.5) * 1.7 + 0.5 + (0.22 if top else 0.24 * (1 - v / max(1, H - 1)) - 0.12)
+    return _BLZ_TONES[min(len(_BLZ_TONES) - 1, max(0, int(g * len(_BLZ_TONES))))]
+
+
+def blaze_head_tex(eyes: str, look: float) -> P.Tex:
+    def tex(face, u, v, W, H):
+        if face == "front":
+            sh = round(look)
+            for ex in (3 + sh, 12 + sh):
+                if ex <= u < ex + 5 and 8 <= v < 10:
+                    x, y = u - ex, v - 8
+                    if eyes == "blink":
+                        return BLZ_EYE if y == 1 else blaze_skin(u, v, H)
+                    if eyes == "happy":
+                        return BLZ_EYE if (y == 0 and 1 <= x <= 3) or (y == 1 and x in (0, 4)) else blaze_skin(u, v, H)
+                    if eyes == "x":
+                        return BLZ_EYE if (y == 0 and x in (0, 2, 4)) or (y == 1 and x in (1, 3)) else blaze_skin(u, v, H)
+                    if eyes == "down":
+                        return BLZ_EYE if y == 1 else blaze_skin(u, v, H)
+                    return (150, 84, 20) if (x, y) == (1, 0) else BLZ_EYE
+                if ex <= u < ex + 5 and v == 7 and eyes != "x":
+                    return (255, 238, 150)               # lit brow above each eye
+            if v == 13 and 7 <= u <= 12:
+                return (104, 52, 10)                     # mouth
+        return blaze_skin(u, v, H, face == "top")
+    return tex
 
 
 def rod_tex(face, u, v, W, H):
+    t = v / max(1, H - 1)
     if face == "top" or v == 0:
-        return P.Glow((255, 236, 150))
-    return None
+        return P.Glow((255, 244, 180))
+    if face == "bottom":
+        return (140, 66, 10)
+    if t < 0.3:
+        return (255, 222, 100)
+    if t < 0.62:
+        return (240, 164, 36) if (u + v) % 4 else (214, 122, 20)
+    return (196, 104, 16) if t < 0.86 else (146, 70, 10)
 
 
 def blaze_parts(yaw=FRONT_YAW, lift=0.0, dx=0.0, roll=0.0, hy=0.0, hp=0.0, spin=0.0, droop=0.0, ring=1.0,
                 eyes="open", look=0.0) -> list[P.Part]:
     root = P.Rig(P.rot_y(yaw), (dx, lift, 0.0))
     head = root.child((0, 15.0, 0), P.chain(P.rot_y(hy), P.rot_x(hp), P.rot_z(roll)))
-    parts = [head.box("head", (0, 0, 0), (3.33, 3.33, 3.33),
-                      face_tex(eyes, look, [(3, 8, 5, 2), (12, 8, 5, 2)], (70, 34, 6), None, blaze_mouth), BLZ, 0)]
+    parts = [head.box("head", (0, 0, 0), (3.33, 3.33, 3.33), blaze_head_tex(eyes, look), BLZ, 0)]
     for ri, (y, r, ph, dirn) in enumerate(((11.0, 5.2, 0.0, 1), (7.7, 4.5, TAU / 8, -1), (4.4, 3.8, 0.0, 1))):
         for k in range(4):
             a = ph + k * TAU / 4 + dirn * spin
             parts.append(root.box(f"rod{ri}{k}", (r * ring * math.cos(a), y - droop * (ri + 1) * 0.9, r * ring * math.sin(a)),
-                                  (0.5, 1.83, 0.5), rod_tex, ROD, 2 + ri * 4 + k))
+                                  (0.5, 1.83, 0.5), rod_tex, BLZ, 2 + ri * 4 + k))
     return parts
 
 
@@ -1280,49 +1313,81 @@ def blaze_frame(state: str, f: int) -> Image.Image:
     parts = blaze_parts(**kw)
     P.shadow(under, (kw.get("dx", 0.0), 0, 0), P.footprint(4.5, 4.5, kw.get("yaw", FRONT_YAW)), 2 + kw.get("lift", 0.0), alpha=(60, 34))
     common(state, f, parts, over)
-    x0, y0, x1, y1 = gbbox(parts)
-    cx = (x0 + x1) / 2
-    if not out:
-        for k in range(7 if state != "running" else 11):
-            age = (f * 3 + k * 7) % 20
-            P.spark(over, cx + (P.hash2(k, 1, 5) - 0.5) * (x1 - x0), y1 - 6 - age * 2.2, 220 - age * 10)
-    hx0, hy0, hx1, _ = gbbox(parts, ("head",))
+    hx0, hy0, hx1, hy1 = gbbox(parts, ("head",))
+    x0, _, x1, y1 = gbbox(parts)
+    if not out:                                   # sparks rise from the rods only, never over the face
+        for k in range(5 if state != "running" else 8):
+            age = (f * 3 + k * 7) % 12
+            P.spark(over, x0 + 2 + P.hash2(k, 1, 5) * (x1 - x0 - 4), y1 - 3 - age * 1.6, 210 - age * 14)
     if out or state in WALK:
         for k in range(3 if out else 2):
             age = (f + k * 2) % 6
             P.puff(over, (hx0 + hx1) / 2 + (k - 1) * 5 - (facing(state) * age * 2 if state in WALK else 0),
-                   max(MARGIN + 3, hy0 - 3 - age * 2.5), 2.5 + age * 0.4, 170 - age * 25, dark=True)
-    return P.render(parts, under, over, outline=(110, 58, 8))
+                   max(MARGIN + 3, hy0 - 3 - age * 2.5), 2.5 + age * 0.4, 160 - age * 25, dark=True)
+    return P.render(parts, under, over, outline=(96, 46, 6))
 
 
 # ---- magma cube (hops, splits open) --------------------------------------------------------
-MAG = [(40, 10, 10), (58, 14, 12), (76, 20, 14), (96, 28, 16), (116, 36, 18), (136, 46, 20), (156, 58, 24), (176, 72, 30)]
+# Six thin layers of near-black red crust with glowing seams; big red/orange/yellow eyes on the
+# upper-middle layer; the layers pull apart in the air and show the hot core between them.
+MAG = [(20, 6, 6), (30, 8, 8), (42, 12, 10), (56, 16, 12), (70, 22, 14), (86, 28, 16), (102, 36, 18), (120, 46, 20)]
+MAG_N, MAG_EYE_LAYER = 6, 3
+_DARK = (18, 4, 4)
 
 
-def mag_slab_tex(face, u, v, W, H):
-    if P.hash2(u // 2, v, 31) < 0.12 or (face == "top" and P.hash2(u, v // 2, 37) < 0.08):
-        return P.Glow((255, 140 + int(60 * P.hash2(u, v, 5)), 40))
-    return None
+def mag_slab_tex(k: int) -> P.Tex:
+    def tex(face, u, v, W, H):
+        if face in P.SIDES:
+            if v == 0 and P.hash2(u // 3, k, 31) < 0.42:          # glowing seam on the layer's top edge
+                return P.Glow((236, 104, 28) if P.hash2(u, k, 33) < 0.7 else (255, 196, 70))
+            if P.hash2(u, v + k * 7, 37) < 0.03:
+                return P.Glow((196, 66, 18))
+            return None
+        if face == "top" and P.hash2(u // 3, v // 3, 41 + k) < 0.1:
+            return P.Glow((230, 100, 26))
+        return None
+    return tex
 
 
-def mag_face_extra(face, u, v, W, H):
-    if face == "front" and v <= 6 and any(ex - 1 <= u <= ex + 8 for ex in (6, 22)):
-        return (34, 8, 8)
-    return mag_slab_tex(face, u, v, W, H)
+def mag_eye_tex(eyes: str, look: float, k: int) -> P.Tex:
+    base = mag_slab_tex(k)
+    Y, O, Rd = P.Glow((255, 226, 96)), P.Glow((255, 140, 30)), P.Glow((200, 44, 16))
+
+    def tex(face, u, v, W, H):
+        if face == "front":
+            sh = round(look)
+            for ex in (5 + sh, 20 + sh):
+                if ex - 1 <= u <= ex + 11 and 0 <= v <= 5:
+                    x, y = u - ex, v - 1
+                    if not (0 <= x < 11 and 0 <= y < 4):
+                        return _DARK                                   # dark rim around each eye
+                    if eyes == "blink":
+                        return O if y == 3 else _DARK
+                    if eyes == "happy":
+                        return Y if (y == 1 and 3 <= x <= 7) or (y == 2 and x in (1, 2, 8, 9)) or (y == 3 and x in (0, 10)) else _DARK
+                    if eyes == "x":
+                        return Y if abs(x - y * 3.3) < 1.3 or abs((10 - x) - y * 3.3) < 1.3 else _DARK
+                    if eyes == "down":
+                        return (Y if 3 <= x <= 7 else O) if y >= 2 else _DARK
+                    if y in (0, 3) or x in (0, 10):
+                        return Rd
+                    return Y if 3 <= x <= 7 else O
+        return base(face, u, v, W, H)
+    return tex
 
 
-def magma_parts(yaw=FRONT_YAW, lift=0.0, dx=0.0, sc=(1.0, 1.0, 1.0), roll=0.0, pitch=0.0, gap=0.15, eyes="open",
+def magma_parts(yaw=FRONT_YAW, lift=0.0, dx=0.0, sc=(1.0, 1.0, 1.0), roll=0.0, pitch=0.0, gap=0.05, eyes="open",
                 look=0.0) -> list[P.Part]:
     root = P.Rig(P.chain(P.rot_y(yaw), P.rot_z(roll), P.rot_x(pitch), P.scale(*sc)), (dx, lift, 0.0))
     parts: list[P.Part] = []
     y = 0.0
-    for k in range(4):
-        top = k == 3
-        tex = face_tex(eyes, look, [(6, 1, 8, 5), (22, 1, 8, 5)], P.Glow((255, 214, 90)), None, mag_face_extra) if top else mag_slab_tex
-        parts.append(root.box("head" if top else f"slab{k}", (0, y + 1.33, 0), (6.0, 1.33, 6.0), tex, MAG, k))
-        y += 2.67 + gap
+    for k in range(MAG_N):
+        tex = mag_eye_tex(eyes, look, k) if k == MAG_EYE_LAYER else mag_slab_tex(k)
+        name = "head" if k == MAG_N - 1 else ("face" if k == MAG_EYE_LAYER else f"slab{k}")
+        parts.append(root.box(name, (0, y + 1.0, 0), (6.0, 1.0, 6.0), tex, MAG, k))
+        y += 2.0 + gap
     h = y - gap
-    parts.append(root.box("core", (0, h / 2, 0), (4.33, max(0.5, h / 2 - 0.4), 4.33), lambda *_: P.Glow((255, 120, 30)), MAG, 9))
+    parts.append(root.box("core", (0, h / 2, 0), (4.67, max(0.5, h / 2 - 0.3), 4.67), lambda *_: P.Glow((255, 150, 40)), MAG, 9))
     return parts
 
 
@@ -1337,10 +1402,10 @@ def magma_frame(state: str, f: int) -> Image.Image:
 
     kw: KW = {}
     if state == "idle":
-        kw = dict(sc=sq(1 + 0.03 * math.sin(p)), gap=0.1 + 0.15 * (0.5 + 0.5 * math.sin(p)), look=0.6 * math.sin(p))
+        kw = dict(sc=sq(1 + 0.03 * math.sin(p)), gap=0.05 + 0.12 * (0.5 + 0.5 * math.sin(p)), look=0.6 * math.sin(p))
     elif state in WALK:
         sy, air = WALK_SY[f], WALK_LIFT[f] > 0
-        kw = dict(yaw=SIDE_YAW * facing(state), lift=WALK_LIFT[f], sc=sq(sy), gap=(0.35 + max(0.0, sy - 1) * 4) if air else 0.08,
+        kw = dict(yaw=SIDE_YAW * facing(state), lift=WALK_LIFT[f], sc=sq(sy), gap=(0.45 + max(0.0, sy - 1) * 4) if air else 0.04,
                   pitch=0.06 if air else 0.0, look=0.8)
         if f >= 12:
             age = f - 12
@@ -1350,36 +1415,38 @@ def magma_frame(state: str, f: int) -> Image.Image:
     elif state == "waving":
         kw = dict(roll=0.12 * math.sin(p), sc=sq(1 + 0.05 * math.sin(2 * p)), eyes="happy", gap=0.3)
     elif state == "jumping":
-        kw = dict(lift=[0.0, 1.5, 5.8, 7.4, 4.0, 0.0][f], sc=sq([0.7, 1.25, 1.08, 0.98, 1.06, 0.75][f]),
-                  gap=[0.05, 0.9, 0.75, 0.5, 0.6, 0.05][f], eyes="happy" if f in (2, 3) else "open")
+        kw = dict(lift=[0.0, 1.5, 5.8, 7.0, 4.0, 0.0][f], sc=sq([0.7, 1.2, 1.06, 0.98, 1.04, 0.75][f]),
+                  gap=[0.04, 0.95, 0.8, 0.55, 0.65, 0.04][f], eyes="happy" if f in (2, 3) else "open")
     elif state == "failed":
         sy = [1.0, 0.85, 0.7, 0.56, 0.6, 0.8][f]
         sx = [1.0, 1.1, 1.2, 1.3, 1.28, 1.12][f]
-        kw = dict(sc=(sx, sy, sx), eyes="x" if f >= 2 else "blink", gap=0.05)
+        kw = dict(sc=(sx, sy, sx), eyes="x" if f >= 2 else "blink", gap=0.04)
     elif state == "waiting":
-        kw = dict(sc=sq(1 + 0.03 * math.sin(2 * p)), look=1.2 * math.sin(p), gap=0.2)
+        kw = dict(sc=sq(1 + 0.03 * math.sin(2 * p)), look=1.2 * math.sin(p), gap=0.15)
     elif state == "running":
         lift = 1.8 * abs(math.sin(p))
-        kw = dict(lift=lift, sc=sq(1.06 if lift > 0.6 else 0.86), gap=0.4 if lift > 0.6 else 0.08)
+        kw = dict(lift=lift, sc=sq(1.06 if lift > 0.6 else 0.86), gap=0.45 if lift > 0.6 else 0.04)
     elif state == "review":
-        kw = dict(pitch=0.14, eyes="down", look=-0.8, gap=0.15)
+        kw = dict(pitch=0.14, eyes="down", look=-0.8, gap=0.12)
     parts = magma_parts(**kw)
     sc = kw.get("sc", (1, 1, 1))
     P.shadow(under, (0, 0, 0), P.footprint(6.3 * sc[0], 6.3 * sc[2], kw.get("yaw", FRONT_YAW)), kw.get("lift", 0.0))
     common(state, f, parts, over)
     if state == "failed" and f >= 2:
-        cx, cy = body_center(parts, ("head",))
+        cx, cy = body_center(parts, ("face",))
         age = f - 2
         for k in range(6):
             a = math.pi + k * math.pi / 5
             P.spark(over, cx + math.cos(a) * (12 + age * 5) * 1.3, cy + math.sin(a) * (10 + age * 4) + age * age, 240 - age * 50)
-        P.puff(over, cx + 4, max(MARGIN + 4, cy - 12 - age * 4), 3 + age * 0.6, 160 - age * 30, dark=True)
-    img = P.render(parts, under, over, outline=(26, 6, 6))
+        P.puff(over, cx + 4, max(MARGIN + 4, cy - 14 - age * 4), 3 + age * 0.6, 160 - age * 30, dark=True)
+    img = P.render(parts, under, over, outline=(30, 8, 6))
     P.set_ground(93.0)
     return img
 
 
 # ---- shulker -----------------------------------------------------------------------------
+# A shulker never walks or hops. When the desktop pet moves it vanishes into portal particles, and
+# the moment it stops it is already somewhere else: it reads as a teleport to a random spot.
 SHUL = [(70, 40, 80), (90, 52, 102), (110, 66, 124), (130, 82, 146), (150, 100, 166), (168, 120, 182), (186, 142, 198), (204, 166, 214)]
 SHEAD = [(150, 160, 60), (176, 186, 74), (198, 206, 90), (216, 222, 108), (230, 234, 128), (240, 244, 150)]
 
@@ -1412,55 +1479,69 @@ def shulker_parts(yaw=FRONT_YAW, lift=0.0, dx=0.0, sc=(1.0, 1.0, 1.0), roll=0.0,
             lid.box("lid", (0, 2.33, 6.33), (6.33, 2.33, 6.33), shell_lid_tex, SHUL, 2)]
 
 
+def portal_ring(over: P.FX, cx: float, cy: float, r: float, n: int, rot: float, alpha: int) -> None:
+    for k in range(n):
+        a = k * TAU / n + rot
+        P.portal(over, cx + math.cos(a) * r * 1.3, cy + math.sin(a) * r * 0.75, alpha)
+
+
 def shulker_frame(state: str, f: int) -> Image.Image:
     under, over = P.FX(), P.FX()
     p = phase(state, f)
-    flash = 0.0
-
-    def sq(sy: float) -> tuple[float, float, float]:
-        sx = 1 + (1 - sy) * 0.5
-        return (sx, sy, sx)
-
+    flash, dissolve = 0.0, 0.0
+    if state in WALK:
+        # while the pet is being moved: no body at all, just a puff and a faint swirl of portal particles
+        cx, cy = body_center(shulker_parts(yaw=SIDE_YAW * facing(state)), ("base", "lid"))
+        if f < 3:
+            portal_ring(over, cx, cy, 4 + f * 6, 12, f * 0.4, 250 - f * 40)
+        for k in range(5):
+            rr = 5 + 2 * math.sin(f * 0.9 + k)
+            portal_ring(over, cx, cy - (f % 4), rr, 1, k * TAU / 5 + f * 0.7, 170 + 30 * ((f + k) % 2))
+        return P.render([], under, over)
     kw: KW = {}
+    visible = True
     if state == "idle":
-        kw = dict(open_=[0.0, 0.12, 0.42, 0.48, 0.2, 0.02][f], look=[0, 0, 0.8, -0.6, 0, 0][f], sc=sq(1 + 0.015 * math.sin(p)))
-    elif state in WALK:
-        kw = dict(yaw=SIDE_YAW * facing(state), lift=WALK_LIFT[f] * 0.7, sc=sq(WALK_SY[f]), open_=0.06 + 0.1 * WALK_LIFT[f] / 4.4, look=0.8)
-        if f >= 12:
-            age = f - 12
-            for k in range(4):
-                gx, gy = P.project(((k - 1.5) * 4.0, 0, 4))
-                P.portal(over, gx, gy - 2 - age * 2, 230 - age * 50)
+        kw = dict(open_=[0.0, 0.12, 0.42, 0.48, 0.2, 0.02][f], look=[0, 0, 0.8, -0.6, 0, 0][f])
     elif state == "waving":
         w = math.sin(p)
         kw = dict(open_=0.95, hdy=0.6 + 0.4 * abs(w), hy=0.25 * w, eyes="happy", roll=0.06 * w)
-    elif state == "jumping":
-        kw = dict(lift=[0.0, 2.0, 5.2, 6.4, 3.6, 0.0][f], sc=sq([0.8, 1.12, 1.04, 1.0, 1.03, 0.86][f]),
-                  open_=[0.0, 0.1, 0.45, 0.8, 0.35, 0.0][f], eyes="happy" if f in (2, 3) else "open")
+    elif state == "jumping":        # a teleport on the spot: gather, flash, gone, back
+        visible = f not in (2, 3)
+        dissolve = [0.0, 0.45, 0.0, 0.0, 0.45, 0.0][f]
+        flash = [0.0, 0.4, 0.0, 0.0, 0.3, 0.0][f]
+        kw = dict(open_=0.0)
     elif state == "failed":
         kw = dict(open_=[0.6, 0.0, 0.0, 0.0, 0.0, 0.12][f], dx=[0, 0.4, -0.4, 0.3, -0.2, 0][f], eyes="x")
         flash = [0, 0.5, 0.2, 0, 0, 0][f]
     elif state == "waiting":
         kw = dict(open_=0.38, hy=0.45 * math.sin(p), look=math.sin(p))
-    elif state == "running":
-        h = abs(math.sin(p))
-        kw = dict(lift=1.6 * h, sc=sq(1.05 if h > 0.5 else 0.88), open_=0.08 + 0.12 * h)
+    elif state == "running":        # busy: stays put, lid peeking, portal motes orbiting
+        kw = dict(open_=0.08 + 0.12 * (0.5 + 0.5 * math.sin(p)), roll=0.03 * math.sin(p), look=0.5 * math.sin(p))
     elif state == "review":
         kw = dict(open_=0.7, eyes="down", look=-0.6, hy=-0.25, hdy=-0.3)
     parts = shulker_parts(**kw)
-    P.shadow(under, (kw.get("dx", 0.0), 0, 0), P.footprint(6.3, 6.3, kw.get("yaw", FRONT_YAW)), kw.get("lift", 0.0))
-    common(state, f, parts, over)
-    if state == "failed" and 1 <= f <= 3:
-        cx, cy = body_center(parts, ("base", "lid"))
-        r = 9 + 5 * (f - 1)
-        for k in range(10):
-            a = k * TAU / 10 + f * 0.5
-            P.portal(over, cx + math.cos(a) * r * 1.3, cy + math.sin(a) * r * 0.7, 240 - (f - 1) * 50)
-    return P.render(parts, under, over, flash=flash, flash_rgb=(200, 120, 255), outline=(46, 26, 58))
+    cx, cy = body_center(parts, ("base", "lid"))
+    if visible:
+        P.shadow(under, (kw.get("dx", 0.0), 0, 0), P.footprint(6.3, 6.3, kw.get("yaw", FRONT_YAW)), 0.0)
+        common(state, f, parts, over)
+    if state == "jumping":
+        portal_ring(over, cx, cy, [16, 8, 15, 6, 6, 10][f], 12, f * 0.5, [200, 240, 250, 170, 240, 120][f])
+    elif state == "running":
+        for k in range(4):
+            portal_ring(over, cx, cy - 2, 13, 1, k * TAU / 4 + f * TAU / 24, 210)
+    elif state == "failed" and 1 <= f <= 3:
+        portal_ring(over, cx, cy, 9 + 5 * (f - 1), 10, f * 0.5, 240 - (f - 1) * 50)
+    return P.render(parts if visible else [], under, over, flash=flash, flash_rgb=(200, 120, 255), outline=(46, 26, 58),
+                    dissolve=dissolve)
 
 
 # ---- warden ------------------------------------------------------------------------------
-WARD = [(10, 26, 32), (14, 36, 44), (18, 46, 56), (24, 58, 70), (30, 72, 86), (38, 88, 104), (48, 104, 120), (60, 120, 138)]
+# Closer to the original: hunched, very broad shoulders, a low wide eyeless head with a heavy brow
+# and a dark mouth, antler-like tendrils glowing at the tips, a bone ribcage with souls glowing
+# inside, long thick arms with big hands, short heavy legs. Dark teal skin with lighter patches.
+WARD = [(6, 22, 28), (10, 30, 38), (14, 40, 50), (18, 50, 62), (24, 62, 76), (30, 76, 90), (38, 92, 106), (48, 108, 122)]
+WARD_PATCH = (34, 88, 100)
+BONE, BONE_D = (188, 202, 192), (128, 148, 142)
 SOUL = (70, 232, 240)
 
 
@@ -1468,45 +1549,68 @@ def _soul(k: float) -> P.Glow:
     return P.Glow((int(SOUL[0] * k), int(SOUL[1] * k), int(SOUL[2] * k)))
 
 
+def ward_skin(face, u, v, W, H):
+    if P._vn(u / 2.5, v / 2.5, 83 + W) > 0.68:
+        return WARD_PATCH
+    return _shade_ends(face, u, v, W, H)
+
+
 def warden_body_tex(glow: float) -> P.Tex:
     def tex(face, u, v, W, H):
-        if face == "front" and 6 <= v <= 18 and abs(u - W / 2) <= 7:
-            if v % 4 == 0:
-                return (8, 20, 26)
-            if abs(u - W / 2) <= 4 and P.hash2(u, v, 53) < 0.5 + 0.3 * glow:
-                return _soul(0.5 + 0.5 * glow)
-        return _shade_ends(face, u, v, W, H)
+        if face == "front":
+            du = abs(u - (W - 1) / 2)
+            if 3 <= v <= int(H * 0.62) and du <= W * 0.36:
+                if du <= 0.6:
+                    return BONE_D                                   # sternum
+                if (v - 3) % 3 == 0:
+                    return BONE if du < W * 0.32 else BONE_D        # ribs
+                if du <= W * 0.27 and P.hash2(u, v, 53) < 0.4 + 0.35 * glow:
+                    return _soul(0.45 + 0.55 * glow)                # souls between the ribs
+                return (6, 16, 20)
+        return ward_skin(face, u, v, W, H)
     return tex
 
 
-def warden_head_tex(eyes: str, glow: float) -> P.Tex:
+def warden_head_tex(mouth: float) -> P.Tex:
     def tex(face, u, v, W, H):
         if face == "front":
-            if v in (11, 12) and (u in (4, 5) or u in (W - 6, W - 5)):
-                return _soul(0.4 + 0.6 * glow)
-            if v >= 15 and 7 <= u <= W - 8 and eyes != "happy":
-                return (6, 14, 18)
-        return None
+            if v in (5, 6) and 3 <= u <= W - 4:
+                return (8, 22, 28)                                  # heavy brow, no eyes
+            top = H - 4 - round(4 * mouth)
+            if v >= top and 6 <= u <= W - 7:
+                if v == top or v == H - 1:
+                    return (150, 170, 160) if u % 3 == 0 else (4, 10, 14)   # teeth along the edges
+                return (4, 10, 14)
+        return ward_skin(face, u, v, W, H)
+    return tex
+
+
+def tendril_tex(glow: float) -> P.Tex:
+    def tex(face, u, v, W, H):
+        if v <= 1 or (face in ("front", "back") and u == W // 2):
+            return _soul(0.5 + 0.5 * glow)
+        return ward_skin(face, u, v, W, H)
     return tex
 
 
 def warden_parts(yaw=FRONT_YAW, lift=0.0, dx=0.0, sc=(1.0, 1.0, 1.0), roll=0.0, pitch=0.0, hy=0.0, hp=0.0, hr=0.0,
-                 arms=(0.0, 0.0), spread=(0.0, 0.0), legs=(0.0, 0.0), eyes="open", glow=1.0, ears=0.0) -> list[P.Part]:
+                 arms=(0.0, 0.0), spread=(0.0, 0.0), legs=(0.0, 0.0), glow=1.0, ears=0.0, mouth=0.0) -> list[P.Part]:
     root = P.Rig(P.chain(P.rot_y(yaw), P.scale(*sc)), (dx, lift, 0.0))
-    hips = root.child((0, 8.0, 0), P.chain(P.rot_z(roll), P.rot_x(pitch)))
-    parts = [hips.box("body", (0, 4.67, 0), (4.67, 4.67, 2.67), warden_body_tex(glow), WARD, 1)]
-    neck = hips.child((0, 9.33, 0.33), P.chain(P.rot_y(hy), P.rot_x(hp), P.rot_z(hr)))
-    parts.append(neck.box("head", (0, 3.33, 0), (4.0, 3.33, 3.33), warden_head_tex(eyes, glow), WARD, 0))
-    ear_glow = 0.6 + 0.4 * glow
+    hips = root.child((0, 6.67, 0), P.chain(P.rot_z(roll), P.rot_x(pitch + 0.12)))      # always a little hunched
+    parts = [hips.box("body", (0, 5.33, 0.33), (5.67, 5.33, 3.0), warden_body_tex(glow), WARD, 1)]
+    neck = hips.child((0, 10.67, 1.33), P.chain(P.rot_y(hy), P.rot_x(hp), P.rot_z(hr)))
+    parts.append(neck.box("head", (0, 2.67, 1.0), (4.67, 3.33, 3.67), warden_head_tex(mouth), WARD, 0))
     for k, sgn in enumerate((-1, 1)):
-        e = neck.child((sgn * 4.0, 5.33, 0), P.rot_z(-sgn * (0.35 + ears)))
-        parts.append(e.box(f"ear{k}", (sgn * 0.5, 1.67, 0), (0.5, 1.67, 1.33), lambda *_, g=ear_glow: _soul(g), WARD, 10 + k))
+        t1 = neck.child((sgn * 4.33, 5.0, 1.0), P.rot_z(-sgn * (0.7 + ears)))
+        parts.append(t1.box(f"ear{k}", (0, 1.5, 0), (0.6, 1.5, 1.0), tendril_tex(glow * 0.6), WARD, 10 + k))
+        t2 = t1.child((0, 3.0, 0), P.rot_z(sgn * (0.55 + ears * 0.5)))
+        parts.append(t2.box(f"tip{k}", (0, 1.33, 0), (0.5, 1.33, 0.83), lambda *_, g=glow: _soul(0.6 + 0.4 * g), WARD, 12 + k))
     for k, sgn in enumerate((-1, 1)):
-        arm = hips.child((sgn * 5.67, 8.67, 0), P.chain(P.rot_x(arms[k]), P.rot_z(sgn * spread[k])))
-        parts.append(arm.box(f"arm{k}", (0, -5.33, 0), (1.33, 5.33, 1.33), _shade_ends, WARD, 4 + k))
+        arm = hips.child((sgn * 6.67, 9.0, 0.33), P.chain(P.rot_x(arms[k]), P.rot_z(sgn * (spread[k] + 0.06))))
+        parts.append(arm.box(f"arm{k}", (0, -5.67, 0), (1.67, 5.67, 1.67), ward_skin, WARD, 4 + k))
     for k, sgn in enumerate((-1, 1)):
-        leg = root.child((sgn * 2.33, 8.0, 0), P.rot_x(legs[k]))
-        parts.append(leg.box(f"leg{k}", (0, -4.0, 0), (1.67, 4.0, 1.67), _shade_ends, WARD, 6 + k))
+        leg = root.child((sgn * 2.67, 6.67, 0), P.rot_x(legs[k]))
+        parts.append(leg.box(f"leg{k}", (0, -3.33, 0), (1.83, 3.33, 1.83), ward_skin, WARD, 6 + k))
     return parts
 
 
@@ -1515,50 +1619,45 @@ def warden_frame(state: str, f: int) -> Image.Image:
     p = phase(state, f)
     flash = 0.0
     kw: KW = {}
-    if state == "idle":
-        kw = dict(sc=(1, 1 + 0.02 * math.sin(p), 1), glow=0.5 + 0.5 * math.sin(p), ears=0.08 * math.sin(2 * p),
-                  arms=(0.05 * math.sin(p), -0.05 * math.sin(p)), hy=0.08 * math.sin(p))
-    elif state in WALK:
-        a = 0.38 * math.sin(p)
-        kw = dict(yaw=SIDE_YAW * facing(state), legs=(-a, a), arms=(0.32 * math.sin(p), -0.32 * math.sin(p)), lift=-8 * (1 - math.cos(a)),
-                  roll=0.04 * math.sin(p), hp=0.04 * math.cos(2 * p), glow=0.6 + 0.4 * math.sin(2 * p), ears=0.06 * math.sin(2 * p))
+    if state == "idle":            # slow breathing, a two-beat heartbeat in the chest, tendrils twitching
+        kw = dict(sc=(1, 1 + 0.015 * math.sin(p), 1), glow=[1.0, 0.55, 0.9, 0.4, 0.35, 0.45][f], ears=0.06 * math.sin(2 * p),
+                  roll=0.02 * math.sin(p), arms=(0.04 * math.sin(p), -0.04 * math.sin(p)), hy=0.06 * math.sin(p))
+    elif state in WALK:            # heavy: weight shifts side to side, shoulders roll, head sways
+        a = 0.32 * math.sin(p)
+        kw = dict(yaw=SIDE_YAW * facing(state), legs=(-a, a), arms=(0.35 * math.sin(p), -0.35 * math.sin(p)), lift=-6.67 * (1 - math.cos(a)),
+                  roll=0.07 * math.sin(p), hy=0.08 * math.sin(p), glow=0.6 + 0.4 * math.sin(2 * p), ears=0.06 * math.sin(2 * p))
         walk_dust(under, f, facing(state), 4.0)
     elif state == "waving":
         w = math.sin(p)
         kw = dict(arms=(0.05, -2.2 - 0.2 * w), spread=(0.0, 0.15 + 0.1 * w), hr=0.08 * w, ears=0.25 + 0.1 * w, glow=1.0)
-    elif state == "jumping":       # roar
-        kw = dict(lift=[0.0, 0.8, 1.8, 2.2, 1.0, 0.0][f], arms=(-0.3, -0.3), spread=([0.2, 0.5, 0.7, 0.7, 0.5, 0.2][f],) * 2,
-                  hp=[0, -0.15, -0.25, -0.25, -0.1, 0][f], ears=[0, 0.3, 0.5, 0.5, 0.3, 0][f], glow=1.0)
-        flash = [0, 0, 0.25, 0.35, 0, 0][f]
+    elif state == "jumping":       # roar: head back, mouth wide, tendrils flared, sonic rings
+        kw = dict(lift=[0.0, 0.6, 1.4, 1.6, 0.8, 0.0][f], arms=(-0.3, -0.3), spread=([0.15, 0.3, 0.38, 0.38, 0.3, 0.15][f],) * 2,
+                  hp=[0, -0.2, -0.32, -0.32, -0.15, 0][f], ears=[0, 0.3, 0.5, 0.5, 0.3, 0][f], mouth=[0, 0.6, 1, 1, 0.6, 0][f], glow=1.0)
+        flash = [0, 0, 0.2, 0.3, 0, 0][f]
     elif state == "failed":
-        kw = dict(ears=[-0.2, -0.4, -0.5, -0.5, -0.4, -0.3][f], hp=[0, 0.15, 0.25, 0.3, 0.25, 0.2][f], dx=[0, 0.2, -0.2, 0.15, -0.1, 0][f],
-                  glow=[1, 0.5, 0.2, 0.1, 0.2, 0.4][f], arms=(0.1, 0.1), spread=(0.05, 0.05))
-    elif state == "waiting":
-        kw = dict(hy=0.4 * math.sin(p), hp=0.1, ears=0.15 + 0.1 * math.sin(2 * p), glow=0.7 + 0.3 * math.sin(p))
+        kw = dict(ears=[-0.2, -0.35, -0.45, -0.45, -0.35, -0.3][f], hp=[0, 0.15, 0.25, 0.3, 0.25, 0.2][f],
+                  dx=[0, 0.2, -0.2, 0.15, -0.1, 0][f], glow=[1, 0.5, 0.2, 0.1, 0.2, 0.4][f], arms=(0.1, 0.1), spread=(0.05, 0.05))
+    elif state == "waiting":       # sniffing the air
+        kw = dict(hy=0.4 * math.sin(p), hp=0.22 + 0.06 * math.sin(2 * p), ears=0.15 + 0.1 * math.sin(2 * p), glow=0.7 + 0.3 * math.sin(p))
     elif state == "running":
-        a = 0.5 * math.sin(p)
-        kw = dict(legs=(-a, a), arms=(0.45 * math.sin(p), -0.45 * math.sin(p)), lift=-8 * (1 - math.cos(a)), roll=0.04 * math.sin(p))
+        a = 0.46 * math.sin(p)
+        kw = dict(legs=(-a, a), arms=(0.45 * math.sin(p), -0.45 * math.sin(p)), lift=-6.67 * (1 - math.cos(a)), roll=0.06 * math.sin(p))
     elif state == "review":
         kw = dict(arms=(-1.0, -1.0), hp=0.35 + 0.04 * math.sin(p), glow=0.8)
     parts = warden_parts(**kw)
-    P.shadow(under, (kw.get("dx", 0.0), 0, 0), P.footprint(6.0, 3.0, kw.get("yaw", FRONT_YAW)), kw.get("lift", 0.0))
+    P.shadow(under, (kw.get("dx", 0.0), 0, 0), P.footprint(7.0, 3.5, kw.get("yaw", FRONT_YAW)), kw.get("lift", 0.0))
     if state == "review":
         x0, y0, x1, y1 = gbbox(parts, ("arm0", "arm1"))
         P.book(over, int((x0 + x1) / 2 - 11), int(y1 - 10), f)
     else:
         common(state, f, parts, over)
-    if state == "jumping" and 2 <= f <= 4:        # sonic rings in front of the head
+    if state == "jumping" and 2 <= f <= 4:
         hx0, hy0, hx1, hy1 = gbbox(parts, ("head",))
-        cx, cy = (hx0 + hx1) / 2, (hy0 + hy1) / 2
-        r = 5 + (f - 2) * 5
+        cx, cy = (hx0 + hx1) / 2, (hy0 + hy1) / 2 + 3
+        r = 6 + (f - 2) * 5
         for k in range(14):
             a = k * TAU / 14
             P.sparkle(over, cx + math.cos(a) * r, cy + math.sin(a) * r * 0.6, 230 - (f - 2) * 60, c=SOUL)
-    if state == "failed" and f >= 1:
-        cx, cy = body_center(parts, ("body",))
-        for k in range(6):
-            age = (f + k) % 6
-            P.sparkle(over, cx + (P.hash2(k, 2, 9) - 0.5) * 30, cy - 10 + age * 4, 220 - age * 30, c=SOUL)
     return P.render(parts, under, over, flash=flash, flash_rgb=SOUL, outline=(44, 96, 108))
 
 
@@ -1571,7 +1670,7 @@ SPECIES: dict[str, dict[str, Any]] = {
     "bee": dict(name="Bee", desc="毛茸茸的蜜蜂：半透明翅膀一直拍，揮手時會跳搖擺舞，跳躍時翻滾一圈。", frame=bee_frame),
     "enderman": dict(name="Enderman", desc="終界使者：長手長腳、紫色眼睛，跳躍時傳送，等待時抱著一塊草方塊。", frame=enderman_frame),
     "lantern": dict(name="Lantern", desc="原創的銅製小燈籠：發光的玻璃臉，提把會晃，失敗時火光熄滅再點亮。", frame=lantern_frame),
-    "shulker": dict(name="Shulker", desc="界伏蚌：紫色的殼會開合，裡面的頭會探出來；移動時合殼跳著走，失敗時猛地關上、冒紫色粒子。", frame=shulker_frame),
+    "shulker": dict(name="Shulker", desc="界伏蚌：殼會開合、頭探出來；不會走路，移動時化成紫色粒子消失、在別處出現，失敗時猛地關上。", frame=shulker_frame),
     "blaze": dict(name="Blaze", desc="烈焰使者：火棒繞著頭旋轉、一直冒火花，失敗時火棒垂下、冒黑煙。", frame=blaze_frame),
     "magma-cube": dict(name="Magma Cube", desc="岩漿立方怪：跳起來時一層層分開，露出發光的岩漿核心。", frame=magma_frame),
     "mooshroom": dict(name="Mooshroom", desc="哞菇：紅白花紋的牛，背上和頭上長著紅蘑菇。", frame=lambda s, f: quad_frame(MOOSH, s, f)),
