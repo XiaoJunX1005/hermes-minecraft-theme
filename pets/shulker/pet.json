@@ -1,6 +1,6 @@
 {
   "id": "shulker",
   "displayName": "Shulker",
-  "description": "界伏蚌：殼會開合、頭探出來；不會走路，移動時化成紫色粒子消失、在別處出現，失敗時猛地關上。",
+  "description": "界伏蚌：像原版一樣，上殼往上升起並轉動、露出裡面的頭；不會走路，移動時化成紫色粒子消失、在別處出現，失敗時猛地關上。",
   "spritesheetPath": "spritesheet.png"
 }

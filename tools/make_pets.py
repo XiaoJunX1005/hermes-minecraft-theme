@@ -1469,14 +1469,29 @@ def shell_lid_tex(face, u, v, W, H):
     return None
 
 
-def shulker_parts(yaw=FRONT_YAW, lift=0.0, dx=0.0, sc=(1.0, 1.0, 1.0), roll=0.0, open_=0.0, hy=0.0, hdy=0.0,
-                  eyes="open", look=0.0) -> list[P.Part]:
+def shulker_lift(peek: float) -> float:
+    """How far the top shell rises: an eased curve like the original (slow start, wide at the end)."""
+    return (1 - math.sin((0.5 + peek) * math.pi)) / 2 * 9.0
+
+
+def shulker_twist(peek: float) -> float:
+    """The top shell turns a little while it rises and is square again once fully open. (In the game it
+    spins a full turn in a few ticks; with 6 frames that only reads as a crooked lid, so keep it small.)"""
+    t = shulker_lift(peek) / 9.0
+    return 0.32 * math.sin(math.pi * t) if peek > 0.3 else 0.0
+
+
+def shulker_parts(yaw=FRONT_YAW, lift=0.0, dx=0.0, sc=(1.0, 1.0, 1.0), roll=0.0, peek=0.0, hy=0.0, hp=0.0,
+                  bob=0.0, eyes="open", look=0.0) -> list[P.Part]:
+    """Bottom shell (0-5), top shell (5-12) sitting flush on it, small head inside (3.5-8.9). The top shell
+    only moves straight up and twists; the head stays put and shows through the gap."""
     root = P.Rig(P.chain(P.rot_y(yaw), P.rot_z(roll), P.scale(*sc)), (dx, lift, 0.0))
-    hd = root.child((0, 6.0 + open_ * 4.0 + hdy, 0), P.rot_y(hy))
-    lid = root.child((0, 7.33, -6.33), P.rot_x(-open_ * 0.9))
-    return [root.box("base", (0, 3.67, 0), (6.0, 3.67, 6.0), shell_base_tex, SHUL, 1),
-            hd.box("head", (0, 0, 0.5), (3.0, 3.0, 3.0), face_tex(eyes, look, [(3, 7, 3, 3), (12, 7, 3, 3)], (28, 26, 12), (240, 240, 210)), SHEAD, 0),
-            lid.box("lid", (0, 2.33, 6.33), (6.33, 2.33, 6.33), shell_lid_tex, SHUL, 2)]
+    hd = root.child((0, 6.2, 0), P.chain(P.rot_y(hy), P.rot_x(hp)))
+    lid = root.child((0, 5.0 + shulker_lift(peek) + bob, 0), P.rot_y(shulker_twist(peek)))
+    return [root.box("base", (0, 2.5, 0), (5.9, 2.5, 5.9), shell_base_tex, SHUL, 1),
+            hd.box("head", (0, 0, 0), (2.7, 2.7, 2.7),
+                   face_tex(eyes, look, [(3, 6, 3, 3), (10, 6, 3, 3)], (28, 26, 12), (240, 240, 210)), SHEAD, 0),
+            lid.box("lid", (0, 3.5, 0), (6.0, 3.5, 6.0), shell_lid_tex, SHUL, 2)]
 
 
 def portal_ring(over: P.FX, cx: float, cy: float, r: float, n: int, rot: float, alpha: int) -> None:
@@ -1501,24 +1516,24 @@ def shulker_frame(state: str, f: int) -> Image.Image:
     kw: KW = {}
     visible = True
     if state == "idle":
-        kw = dict(open_=[0.0, 0.12, 0.42, 0.48, 0.2, 0.02][f], look=[0, 0, 0.8, -0.6, 0, 0][f])
+        kw = dict(peek=[0.0, 0.14, 0.3, 0.32, 0.3, 0.12][f], look=[0, 0, 0.8, -0.6, 0, 0][f])   # peeks out and back
     elif state == "waving":
         w = math.sin(p)
-        kw = dict(open_=0.95, hdy=0.6 + 0.4 * abs(w), hy=0.25 * w, eyes="happy", roll=0.06 * w)
+        kw = dict(peek=1.0, bob=0.5 * math.sin(2 * p), hy=0.25 * w, eyes="happy")
     elif state == "jumping":        # a teleport on the spot: gather, flash, gone, back
         visible = f not in (2, 3)
         dissolve = [0.0, 0.45, 0.0, 0.0, 0.45, 0.0][f]
         flash = [0.0, 0.4, 0.0, 0.0, 0.3, 0.0][f]
-        kw = dict(open_=0.0)
+        kw = dict(peek=0.0)
     elif state == "failed":
-        kw = dict(open_=[0.6, 0.0, 0.0, 0.0, 0.0, 0.12][f], dx=[0, 0.4, -0.4, 0.3, -0.2, 0][f], eyes="x")
+        kw = dict(peek=[0.8, 0.0, 0.0, 0.0, 0.0, 0.1][f], dx=[0, 0.4, -0.4, 0.3, -0.2, 0][f], eyes="x")   # slams shut
         flash = [0, 0.5, 0.2, 0, 0, 0][f]
     elif state == "waiting":
-        kw = dict(open_=0.38, hy=0.45 * math.sin(p), look=math.sin(p))
+        kw = dict(peek=0.45, hy=0.45 * math.sin(p), look=math.sin(p))
     elif state == "running":        # busy: stays put, lid peeking, portal motes orbiting
-        kw = dict(open_=0.08 + 0.12 * (0.5 + 0.5 * math.sin(p)), roll=0.03 * math.sin(p), look=0.5 * math.sin(p))
+        kw = dict(peek=0.3 + 0.25 * (0.5 + 0.5 * math.sin(p)), look=0.5 * math.sin(p))
     elif state == "review":
-        kw = dict(open_=0.7, eyes="down", look=-0.6, hy=-0.25, hdy=-0.3)
+        kw = dict(peek=0.85, bob=0.4 * math.sin(p), eyes="down", look=-0.6, hy=-0.25, hp=0.3)
     parts = shulker_parts(**kw)
     cx, cy = body_center(parts, ("base", "lid"))
     if visible:
@@ -1670,7 +1685,7 @@ SPECIES: dict[str, dict[str, Any]] = {
     "bee": dict(name="Bee", desc="毛茸茸的蜜蜂：半透明翅膀一直拍，揮手時會跳搖擺舞，跳躍時翻滾一圈。", frame=bee_frame),
     "enderman": dict(name="Enderman", desc="終界使者：長手長腳、紫色眼睛，跳躍時傳送，等待時抱著一塊草方塊。", frame=enderman_frame),
     "lantern": dict(name="Lantern", desc="原創的銅製小燈籠：發光的玻璃臉，提把會晃，失敗時火光熄滅再點亮。", frame=lantern_frame),
-    "shulker": dict(name="Shulker", desc="界伏蚌：殼會開合、頭探出來；不會走路，移動時化成紫色粒子消失、在別處出現，失敗時猛地關上。", frame=shulker_frame),
+    "shulker": dict(name="Shulker", desc="界伏蚌：像原版一樣，上殼往上升起並轉動、露出裡面的頭；不會走路，移動時化成紫色粒子消失、在別處出現，失敗時猛地關上。", frame=shulker_frame),
     "blaze": dict(name="Blaze", desc="烈焰使者：火棒繞著頭旋轉、一直冒火花，失敗時火棒垂下、冒黑煙。", frame=blaze_frame),
     "magma-cube": dict(name="Magma Cube", desc="岩漿立方怪：跳起來時一層層分開，露出發光的岩漿核心。", frame=magma_frame),
     "mooshroom": dict(name="Mooshroom", desc="哞菇：紅白花紋的牛，背上和頭上長著紅蘑菇。", frame=lambda s, f: quad_frame(MOOSH, s, f)),
