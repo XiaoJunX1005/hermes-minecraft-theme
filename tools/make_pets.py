@@ -107,6 +107,19 @@ def burst(over: P.FX, cx: float, cy: float, f: int, r0: float = 11) -> None:
         P.puff(over, cx + 2, cy - r0 - 4, 2.5, 70, dark=True)
 
 
+def plant(build: Callable[..., list[P.Part]], kw: KW, *args: Any) -> list[P.Part]:
+    """Build the pose; if any box corner dips below the ground (a tilted rigid leg digs its toe in),
+    raise the whole body by that much so it rests on the ground instead of sinking into it.
+    Never lowers anything, so hops and floats are untouched. Updates kw['lift'] for the shadow."""
+    parts = build(*args, **kw)
+    lo = min(P.add(P.mv(p.M, (a, b, c)), p.t)[1]
+             for p in parts for a in (-p.half[0], p.half[0]) for b in (-p.half[1], p.half[1]) for c in (-p.half[2], p.half[2]))
+    if lo < -0.05:
+        kw["lift"] = kw.get("lift", 0.0) - lo
+        parts = build(*args, **kw)
+    return parts
+
+
 def body_center(parts: list[P.Part], names: tuple[str, ...]) -> tuple[float, float]:
     x0, y0, x1, y1 = gbbox(parts, names)
     return (x0 + x1) / 2, (y0 + y1) / 2
@@ -213,7 +226,7 @@ def creeper_frame(state: str, f: int) -> Image.Image:
         kw = dict(legs=(-a, a, a, -a), lift=-6 * (1 - math.cos(a)), roll=0.03 * math.sin(p), hy=-0.08, look=-0.3)
     elif state == "review":
         kw = dict(hp=0.3 + 0.04 * math.sin(p), hy=-0.3 + 0.05 * math.sin(p), eyes="down", look=-0.6)
-    parts = creeper_parts(**kw)
+    parts = plant(creeper_parts, kw)
     P.shadow(under, (kw.get("dx", 0.0), 0, 0), P.footprint(4.5, 6, kw.get("yaw", FRONT_YAW)), kw.get("lift", 0.0))
     common(state, f, parts, over)
     if state == "failed":
@@ -310,7 +323,7 @@ def pig_frame(state: str, f: int) -> Image.Image:
         kw = dict(legs=(-a, a, a, -a), lift=-5 * (1 - math.cos(a)), roll=0.03 * math.sin(p), hr=-0.05, tail=0.6 * math.sin(2 * p))
     elif state == "review":
         kw = dict(hy=-0.32, hp=0.32 + 0.06 * math.sin(p), look=-0.5)
-    parts = pig_parts(**kw)
+    parts = plant(pig_parts, kw)
     P.shadow(under, (kw.get("dx", 0.0), 0, 0), P.footprint(4.8, 10.5, kw.get("yaw", FRONT_YAW)), kw.get("lift", 0.0))
     common(state, f, parts, over)
     if state == "failed":
@@ -397,7 +410,7 @@ def chicken_frame(state: str, f: int) -> Image.Image:
         kw = dict(legs=(-a, a), lift=-5 * (1 - math.cos(a)), wings=(fl, fl), roll=0.04 * math.sin(p), hz=0.6 * math.sin(2 * p))
     elif state == "review":
         kw = dict(hy=-0.3, hp=[0.3, 0.75, 0.3, 0.7, 0.3, 0.55][f], hz=[0, 1.0, 0, 0.9, 0, 0.6][f])
-    parts = chicken_parts(**kw)
+    parts = plant(chicken_parts, kw)
     P.shadow(under, (kw.get("dx", 0.0), 0, 0), P.footprint(4.8, 7.5, kw.get("yaw", FRONT_YAW)), kw.get("lift", 0.0))
     common(state, f, parts, over)
     if state == "failed" and f >= 2:
@@ -513,7 +526,7 @@ def slime_frame(state: str, f: int) -> Image.Image:
         kw = dict(lift=lift, sc=sq(1.06 if lift > 0.6 else 0.86), cdy=0.3 * math.sin(2 * p))
     elif state == "review":
         kw = dict(pitch=0.14, eyes="down", look=-0.8, cdy=-0.2)
-    parts = slime_parts(**kw)
+    parts = plant(slime_parts, kw)
     sc = kw.get("sc", (1, 1, 1))
     P.shadow(under, (0, 0, 0), P.footprint(6.6 * sc[0], 6.6 * sc[2], kw.get("yaw", FRONT_YAW)), kw.get("lift", 0.0))
     common(state, f, parts, over, ("shell",))
@@ -631,7 +644,7 @@ def bee_frame(state: str, f: int) -> Image.Image:
         kw.update(dx=1.2 * math.sin(2 * p), roll=0.12 * math.sin(2 * p), pitch=0.12, lift=0.6 * math.sin(p))
     elif state == "review":
         kw.update(hy=-0.25, pitch=0.28, eyes="down", lift=-1.5 + 0.3 * math.sin(p))
-    parts = bee_parts(**kw)
+    parts = plant(bee_parts, kw)
     P.shadow(under, (kw.get("dx", 0.0), 0, 0), P.footprint(5, 6.67, kw.get("yaw", FRONT_YAW)), 6 + kw.get("lift", 0.0), alpha=(60, 34))
     common(state, f, parts, over)
     if state == "failed" and f >= 3:
@@ -747,7 +760,7 @@ def enderman_frame(state: str, f: int) -> Image.Image:
         kw = dict(legs=(-a, a), arms=(0.5 * math.sin(p), -0.5 * math.sin(p)), lift=-12 * (1 - math.cos(a)), roll=0.03 * math.sin(p))
     elif state == "review":
         kw = dict(arms=(-1.0, -1.0), hp=0.35 + 0.04 * math.sin(p), hy=0.05 * math.sin(p))
-    parts = enderman_parts(**kw)
+    parts = plant(enderman_parts, kw)
     P.shadow(under, (kw.get("dx", 0.0), 0, 0), P.footprint(4.5, 2.5, kw.get("yaw", FRONT_YAW)), kw.get("lift", 0.0))
     if state == "review":
         # book held in both hands instead of on the ground
@@ -880,7 +893,7 @@ def lantern_frame(state: str, f: int) -> Image.Image:
                   roll=0.05 * math.sin(p), glow=0.9 + flick)
     elif state == "review":
         kw = dict(pitch=0.16, eyes="down", glow=1.0, swing=0.08 * math.sin(p))
-    parts = lantern_parts(**kw)
+    parts = plant(lantern_parts, kw)
     g = kw.get("glow", 1.0)
     cx, cy = P.project((kw.get("dx", 0.0), 0, 0))
     if g >= 0.12:
@@ -1007,7 +1020,7 @@ def quad_frame(Q: dict[str, Any], state: str, f: int) -> Image.Image:
         kw = dict(hy=-0.32, hp=0.32 + 0.06 * math.sin(p), look=-0.5, eyes="down")
     if Q.get("pose"):
         Q["pose"](state, f, kw)
-    parts = quad_parts(Q, **kw)
+    parts = plant(quad_parts, kw, Q)
     P.shadow(under, (kw.get("dx", 0.0), 0, 0), P.footprint(*Q["foot"], kw.get("yaw", FRONT_YAW)), kw.get("lift", 0.0))
     common(state, f, parts, over)
     if state == "failed":
@@ -1204,7 +1217,7 @@ def gsquid_frame(state: str, f: int, squid: bool = False) -> Image.Image:
         kw.update(spread=0.3 + 0.3 * math.sin(2 * p), lift=1.0 * abs(math.sin(p)), pitch=0.15)
     elif state == "review":
         kw.update(pitch=0.3, eyes="down", look=-0.6, lift=-0.5)
-    parts = gsquid_parts(**kw)
+    parts = plant(gsquid_parts, kw)
     P.shadow(under, (kw.get("dx", 0.0), 0, 0), P.footprint(4, 4, kw.get("yaw", FRONT_YAW)), 3 + kw.get("lift", 0.0), alpha=(56, 32))
     common(state, f, parts, over)
     if state == "failed" and 1 <= f <= 4:      # ink cloud
@@ -1310,7 +1323,7 @@ def blaze_frame(state: str, f: int) -> Image.Image:
         kw.update(spin=2 * (TAU / 4) * f / n, lift=0.8 * abs(math.sin(p)))
     elif state == "review":
         kw.update(hp=0.3, eyes="down", look=-0.6)
-    parts = blaze_parts(**kw)
+    parts = plant(blaze_parts, kw)
     P.shadow(under, (kw.get("dx", 0.0), 0, 0), P.footprint(4.5, 4.5, kw.get("yaw", FRONT_YAW)), 2 + kw.get("lift", 0.0), alpha=(60, 34))
     common(state, f, parts, over)
     hx0, hy0, hx1, hy1 = gbbox(parts, ("head",))
@@ -1428,7 +1441,7 @@ def magma_frame(state: str, f: int) -> Image.Image:
         kw = dict(lift=lift, sc=sq(1.06 if lift > 0.6 else 0.86), gap=0.45 if lift > 0.6 else 0.04)
     elif state == "review":
         kw = dict(pitch=0.14, eyes="down", look=-0.8, gap=0.12)
-    parts = magma_parts(**kw)
+    parts = plant(magma_parts, kw)
     sc = kw.get("sc", (1, 1, 1))
     P.shadow(under, (0, 0, 0), P.footprint(6.3 * sc[0], 6.3 * sc[2], kw.get("yaw", FRONT_YAW)), kw.get("lift", 0.0))
     common(state, f, parts, over)
@@ -1534,7 +1547,7 @@ def shulker_frame(state: str, f: int) -> Image.Image:
         kw = dict(peek=0.3 + 0.25 * (0.5 + 0.5 * math.sin(p)), look=0.5 * math.sin(p))
     elif state == "review":
         kw = dict(peek=0.85, bob=0.4 * math.sin(p), eyes="down", look=-0.6, hy=-0.25, hp=0.3)
-    parts = shulker_parts(**kw)
+    parts = plant(shulker_parts, kw)
     cx, cy = body_center(parts, ("base", "lid"))
     if visible:
         P.shadow(under, (kw.get("dx", 0.0), 0, 0), P.footprint(6.3, 6.3, kw.get("yaw", FRONT_YAW)), 0.0)
@@ -1659,7 +1672,7 @@ def warden_frame(state: str, f: int) -> Image.Image:
         kw = dict(legs=(-a, a), arms=(0.45 * math.sin(p), -0.45 * math.sin(p)), lift=-6.67 * (1 - math.cos(a)), roll=0.06 * math.sin(p))
     elif state == "review":
         kw = dict(arms=(-1.0, -1.0), hp=0.35 + 0.04 * math.sin(p), glow=0.8)
-    parts = warden_parts(**kw)
+    parts = plant(warden_parts, kw)
     P.shadow(under, (kw.get("dx", 0.0), 0, 0), P.footprint(7.0, 3.5, kw.get("yaw", FRONT_YAW)), kw.get("lift", 0.0))
     if state == "review":
         x0, y0, x1, y1 = gbbox(parts, ("arm0", "arm1"))
